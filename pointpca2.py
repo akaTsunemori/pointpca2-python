@@ -28,6 +28,15 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
     return pcOut
 
 
+def rgb_to_yuv(rgb):
+    r, g, b = rgb[:, 0], rgb[:, 1], rgb[:, 2]
+    y = 0.299 * r + 0.587 * g + 0.114 * b
+    u = 0.492 * (b - y)
+    v = 0.877 * (r - y)
+    yuv = np.column_stack((y, u, v))
+    return yuv.astype(int)
+
+
 class PointPCA2:
     def __init__(self, 
             ref: o3d.geometry.PointCloud, 
@@ -48,8 +57,13 @@ point_cloud = o3d.geometry.PointCloud()
 point_cloud.points = o3d.utility.Vector3dVector(points)
 point_cloud.colors = o3d.utility.Vector3dVector(colors)
 
+# Duplicate Merging testing
 pcOut = pc_duplicate_merging(point_cloud)
 pcOut_points = np.asarray(pcOut.points)
 pcOut_colors = np.asarray(pcOut.colors)
 print(pcOut_points)
 print(pcOut_colors)
+
+# RGB to YUV testing
+rgb_array = np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]])
+print(rgb_to_yuv(rgb_array))
