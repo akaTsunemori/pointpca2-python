@@ -21,6 +21,7 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
                 colors[j, :] = np.round(np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
             id = id[:-1]
             vertices = vertices_sorted[id, :]
+            colorsIn = colors
     pcOut = o3d.geometry.PointCloud()
     pcOut.points = o3d.utility.Vector3dVector(vertices)
     if colorsIn.shape[0] != 0:
@@ -52,7 +53,10 @@ class PointPCA2:
 points = np.random.rand(100, 3)
 points[0] = points[1] # Force duplicated points
 points[20] = points[21]
+points *= 1000
 colors = np.random.rand(100, 3)
+colors *= 255
+colors = colors.astype(int)
 point_cloud = o3d.geometry.PointCloud()
 point_cloud.points = o3d.utility.Vector3dVector(points)
 point_cloud.colors = o3d.utility.Vector3dVector(colors)
