@@ -1,5 +1,6 @@
 import numpy as np
 import open3d as o3d
+from scipy.spatial import KDTree
 
 
 def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
@@ -38,15 +39,32 @@ def rgb_to_yuv(rgb):
     return yuv.astype(int)
 
 
+def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
+    distances = []
+    indices = []
+    kdtree = KDTree(va)
+    for pb in vb:
+        distance, index = kdtree.query(pb, k=search_size, p=2)
+        distances.append(distance)
+        indices.append(index)
+    distances = np.asarray(distances)
+    indices = np.asarray(indices)
+    return (distances, indices)
+
+
+def compute_features():
+    pass
+
+
+def compute_predictors():
+    pass
+
+
 class PointPCA2:
     def __init__(self, 
             ref: o3d.geometry.PointCloud, 
             test: o3d.geometry.PointCloud) -> None:
         pass
-
-
-# ref = o3d.io.read_point_cloud('flowerpot.ply')
-# test = o3d.io.read_point_cloud('flowerpot_level_7.ply')
 
 
 # Create a sample point cloud with colors
@@ -62,12 +80,26 @@ point_cloud.points = o3d.utility.Vector3dVector(points)
 point_cloud.colors = o3d.utility.Vector3dVector(colors)
 
 # Duplicate Merging testing
+print('Duplicate merging testing')
 pcOut = pc_duplicate_merging(point_cloud)
 pcOut_points = np.asarray(pcOut.points)
 pcOut_colors = np.asarray(pcOut.colors)
-print(pcOut_points)
-print(pcOut_colors)
+print(pcOut_points[:10])
+print(pcOut_colors[:10])
 
 # RGB to YUV testing
+print('RGB to YUV testing')
 rgb_array = np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]])
 print(rgb_to_yuv(rgb_array))
+
+# Perform KNN Search
+print('KNN Search testing')
+# searchSize = 81
+searchSize = 3
+# ref = o3d.io.read_point_cloud('flowerpot.ply')
+# test = o3d.io.read_point_cloud('flowerpot_level_7.ply')
+# ref_np = np.asarray(ref.points)
+idA, distA = knnsearch(pcOut_points, pcOut_points, searchSize)
+print(idA)
+print(distA)
+
