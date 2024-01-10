@@ -116,29 +116,9 @@ class PointPCA2:
         pass
 
 
-# Create a sample point cloud with colors
-# pc1
-points = np.random.rand(100, 3)
-points[0] = points[1] # Force duplicated points
-points[20] = points[21]
-points *= 1000
-colors = np.random.rand(100, 3)
-colors *= 255
-colors = colors.astype(int)
-pc1 = o3d.geometry.PointCloud()
-pc1.points = o3d.utility.Vector3dVector(points)
-pc1.colors = o3d.utility.Vector3dVector(colors)
-# pc2
-points = np.random.rand(100, 3)
-points[0] = points[1] # Force duplicated points
-points[20] = points[21]
-points *= 1000
-colors = np.random.rand(100, 3)
-colors *= 255
-colors = colors.astype(int)
-pc2 = o3d.geometry.PointCloud()
-pc2.points = o3d.utility.Vector3dVector(points)
-pc2.colors = o3d.utility.Vector3dVector(colors)
+# Load PCs
+pc1 = o3d.io.read_point_cloud('pc1.ply')
+pc2 = o3d.io.read_point_cloud('pc2.ply')
 
 # pc_duplicate_merging testing
 print('pc_duplicate_merging')
