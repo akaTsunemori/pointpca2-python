@@ -84,14 +84,20 @@ def compute_features(attA, attB, idA, idB,  searchSize):
             _, eigvecsB = np.linalg.eigh(covMatrixB)
             if eigvecsB.shape[1] != 3:
                 eigvecsB = np.full((3, 3), np.nan)
+        meanA = meanA.flatten()
+        meanB = meanB.flatten()
+        varA = varA.flatten()
+        varB = varB.flatten()
+        # The dimensions for varA, varB, meanA and meanB
+        # are wrong. Needs to be checked and fixed.
         local_feats[i, :] = np.concatenate([
             geoA_prA[0, :],          # 1-3
             geoB_prA[0, :],          # 4-6
-            meanA[3:],               # 7-9
-            meanB,                   # 10-15
+            meanA[3:6],              # 7-9
+            meanB[:5],               # 10-15
             varA,                    # 16-21
             varB,                    # 22-27
-            covAB,                   # 28-34
+            [covAB],                 # 28-34
             eigvecsB[:, 0],          # 35-37
             eigvecsB[:, 1],          # 37-39
             eigvecsB[:, 2]           # 40-42
@@ -111,6 +117,7 @@ class PointPCA2:
 
 
 # Create a sample point cloud with colors
+# pc1
 points = np.random.rand(100, 3)
 points[0] = points[1] # Force duplicated points
 points[20] = points[21]
@@ -118,31 +125,47 @@ points *= 1000
 colors = np.random.rand(100, 3)
 colors *= 255
 colors = colors.astype(int)
-point_cloud = o3d.geometry.PointCloud()
-point_cloud.points = o3d.utility.Vector3dVector(points)
-point_cloud.colors = o3d.utility.Vector3dVector(colors)
+pc1 = o3d.geometry.PointCloud()
+pc1.points = o3d.utility.Vector3dVector(points)
+pc1.colors = o3d.utility.Vector3dVector(colors)
+# pc2
+points = np.random.rand(100, 3)
+points[0] = points[1] # Force duplicated points
+points[20] = points[21]
+points *= 1000
+colors = np.random.rand(100, 3)
+colors *= 255
+colors = colors.astype(int)
+pc2 = o3d.geometry.PointCloud()
+pc2.points = o3d.utility.Vector3dVector(points)
+pc2.colors = o3d.utility.Vector3dVector(colors)
 
-# Duplicate Merging testing
-print('Duplicate merging testing')
-pcOut = pc_duplicate_merging(point_cloud)
-pcOut_points = np.asarray(pcOut.points)
-pcOut_colors = np.asarray(pcOut.colors)
-print(pcOut_points[:10])
-print(pcOut_colors[:10])
+# pc_duplicate_merging testing
+print('pc_duplicate_merging')
+pc1 = pc_duplicate_merging(pc1)
+pc2 = pc_duplicate_merging(pc2)
 
-# RGB to YUV testing
-print('RGB to YUV testing')
-rgb_array = np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]])
-print(rgb_to_yuv(rgb_array))
+# rgb_to_yuv testing
+print('rgb_to_yuv')
+geoA = np.asarray(pc1.points)
+texA = rgb_to_yuv(np.asarray(pc1.colors))
+geoB = np.asarray(pc2.points)
+texB = rgb_to_yuv(np.asarray(pc2.colors))
 
-# Perform KNN Search
-print('KNN Search testing')
+# knnsearch testing
+print('knnsearch')
 # searchSize = 81
 searchSize = 3
-# ref = o3d.io.read_point_cloud('flowerpot.ply')
-# test = o3d.io.read_point_cloud('flowerpot_level_7.ply')
-# ref_np = np.asarray(ref.points)
-idA, distA = knnsearch(pcOut_points, pcOut_points, searchSize)
-print(idA)
-print(distA)
+_, idA = knnsearch(geoA, geoA, searchSize)
+_, idB = knnsearch(geoB, geoA, searchSize)
 
+# compute_features testing
+print('compute_features')
+geoA = geoA.reshape(-1, 1) if geoA.ndim == 1 else geoA
+texA = texA.reshape(-1, 1) if texA.ndim == 1 else texA
+geoB = geoB.reshape(-1, 1) if geoB.ndim == 1 else geoB
+texB = texB.reshape(-1, 1) if texB.ndim == 1 else texB
+attA = np.concatenate([geoA, texA], axis=1)
+attB = np.concatenate([geoB, texB], axis=1) 
+lfeats = compute_features(attA, attB, idA, idB, searchSize)
+print(lfeats)
