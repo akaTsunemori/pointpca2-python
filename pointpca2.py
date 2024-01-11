@@ -52,56 +52,48 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
     return (distances, indices)
 
 
-def compute_features(attA, attB, idA, idB,  searchSize):
-    local_feats = np.full((attA.shape[0], 42), np.nan)
+def compute_features(attA, attB, idA, idB, searchSize):
+    local_feats = np.empty((attA.shape[0], 42))
     for i in range(attA.shape[0]):
-        dataA = attA[idA[i, 0:searchSize], :]
-        dataB = attB[idB[i, 0:searchSize], :]
-        geoA = dataA[:, 0:3]
+        dataA = attA[idA[i, :searchSize], :]
+        dataB = attB[idB[i, :searchSize], :]
+        geoA = dataA[:, :3]
         texA = dataA[:, 3:6]
-        geoB = dataB[:, 0:3]
+        geoB = dataB[:, :3]
         texB = dataB[:, 3:6]
-        covMatrixA = np.cov(geoA, rowvar=False, ddof=1)
-        if np.sum(~np.isfinite(covMatrixA)) >= 1:
+        covMatrixA = np.cov(geoA, rowvar=False)
+        if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
             _, eigvecsA = np.linalg.eigh(covMatrixA)
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
-        geoA_prA = (geoA - np.nanmean(geoA, axis=0)) @ eigvecsA
-        geoB_prA = (geoB - np.nanmean(geoA, axis=0)) @ eigvecsA
-        meanA = np.nanmean(np.array([geoA_prA, texA]), axis=0)
-        meanB = np.nanmean(np.array([geoB_prA, texB]), axis=0)
-        devmeanA = np.array([geoA_prA, texA]) - meanA
-        devmeanB = np.array([geoB_prA, texB]) - meanB
-        varA = np.nanmean(np.square(devmeanA), axis=0)
-        varB = np.nanmean(np.square(devmeanB), axis=0)
-        covAB = np.mean(devmeanA * devmeanB)
-        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=1)
-        if np.sum(~np.isfinite(covMatrixB)) >= 1:
+        geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA
+        geoB_prA = (geoB - np.mean(geoA, axis=0)) @ eigvecsA
+        meanA = np.mean(np.concatenate((geoA_prA, texA), axis=1), axis=0)
+        meanB = np.mean(np.concatenate((geoB_prA, texB), axis=1), axis=0)
+        devmeanA = np.concatenate((geoA_prA, texA), axis=1) - meanA
+        devmeanB = np.concatenate((geoB_prA, texB), axis=1) - meanB
+        varA = np.mean(devmeanA**2, axis=0)
+        varB = np.mean(devmeanB**2, axis=0)
+        covAB = np.mean(devmeanA * devmeanB, axis=0)
+        covMatrixB = np.cov(geoB_prA, rowvar=False)
+        if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
             _, eigvecsB = np.linalg.eigh(covMatrixB)
             if eigvecsB.shape[1] != 3:
                 eigvecsB = np.full((3, 3), np.nan)
-        meanA = meanA.flatten()
-        meanB = meanB.flatten()
-        varA = varA.flatten()
-        varB = varB.flatten()
-        # The dimensions for varA, varB, meanA and meanB
-        # are wrong. Needs to be checked and fixed.
-        local_feats[i, :] = np.concatenate([
-            geoA_prA[0, :],          # 1-3
-            geoB_prA[0, :],          # 4-6
-            meanA[3:6],              # 7-9
-            meanB[:5],               # 10-15
-            varA,                    # 16-21
-            varB,                    # 22-27
-            [covAB],                 # 28-34
-            eigvecsB[:, 0],          # 35-37
-            eigvecsB[:, 1],          # 37-39
-            eigvecsB[:, 2]           # 40-42
-        ])
+        local_feats[i, :] = np.concatenate((geoA_prA[0],          # 1-3
+                                            geoB_prA[0],          # 4-6
+                                            meanA[3:6],           # 7-9
+                                            meanB,                # 10-15
+                                            varA,                 # 16-21
+                                            varB,                 # 22-27
+                                            covAB,                # 28-34
+                                            eigvecsB[:, 0],       # 35-37
+                                            eigvecsB[:, 1],       # 37-39
+                                            eigvecsB[:, 2]))      # 40-42
     return local_feats
 
 
@@ -148,4 +140,3 @@ texB = texB.reshape(-1, 1) if texB.ndim == 1 else texB
 attA = np.concatenate([geoA, texA], axis=1)
 attB = np.concatenate([geoB, texB], axis=1) 
 lfeats = compute_features(attA, attB, idA, idB, searchSize)
-print(lfeats)
