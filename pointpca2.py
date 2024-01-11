@@ -117,8 +117,8 @@ class PointPCA2:
 
 
 # Load PCs
-pc1 = o3d.io.read_point_cloud('pc1.ply')
-pc2 = o3d.io.read_point_cloud('pc2.ply')
+pc1 = o3d.io.read_point_cloud('matlab_dump/pc1.ply')
+pc2 = o3d.io.read_point_cloud('matlab_dump/pc2.ply')
 
 # pc_duplicate_merging testing
 print('pc_duplicate_merging')
