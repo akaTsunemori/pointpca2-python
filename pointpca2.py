@@ -3,6 +3,10 @@ import open3d as o3d
 from scipy.spatial import KDTree
 
 
+searchSize = 3
+numPreds = 40
+
+
 def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
     geomIn = np.asarray(pcIn.points)
     colorsIn = np.asarray(pcIn.colors)
@@ -207,17 +211,11 @@ texB = rgb_to_yuv(np.asarray(pc2.colors))
 
 # knnsearch testing
 print('knnsearch')
-# searchSize = 81
-searchSize = 3
 _, idA = knnsearch(geoA, geoA, searchSize)
 _, idB = knnsearch(geoB, geoA, searchSize)
 
 # compute_features testing
 print('compute_features')
-geoA = geoA.reshape(-1, 1) if geoA.ndim == 1 else geoA
-texA = texA.reshape(-1, 1) if texA.ndim == 1 else texA
-geoB = geoB.reshape(-1, 1) if geoB.ndim == 1 else geoB
-texB = texB.reshape(-1, 1) if texB.ndim == 1 else texB
 attA = np.concatenate([geoA, texA], axis=1)
 attB = np.concatenate([geoB, texB], axis=1) 
 lfeats = compute_features(attA, attB, idA, idB, searchSize)
@@ -226,7 +224,6 @@ lfeats = compute_features(attA, attB, idA, idB, searchSize)
 preds, predNames = compute_predictors(lfeats)
 
 # pool_across_samples testing
-numPreds = 40
 lcpointpca = np.zeros(numPreds)
 for i in range(numPreds):
     lcpointpca[i] = pool_across_samples(preds[:, i])
