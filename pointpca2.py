@@ -224,6 +224,8 @@ lfeats = compute_features(attA, attB, idA, idB, searchSize)
 
 # compute_predictors testing
 preds, predNames = compute_predictors(lfeats)
+
+# pool_across_samples testing
 numPreds = 40
 lcpointpca = np.zeros(numPreds)
 for i in range(numPreds):
