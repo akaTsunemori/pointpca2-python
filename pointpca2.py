@@ -178,7 +178,15 @@ def compute_predictors(lfeats):
         np.sqrt(np.sum(np.array([0, 1, 0]) ** 2)) * np.sqrt(np.sum(geigvecB_y ** 2, axis=1))))) / np.pi
     preds[:, 37] = 1 - np.sum(np.tile([1, 0, 0], (geigvecB_x.shape[0], 1)) * geigvecB_x, axis=1)
     preds[:, 38] = 1 - np.sum(np.tile([0, 0, 1], (geigvecB_z.shape[0], 1)) * geigvecB_z, axis=1)
-    return preds
+    return preds, predNames
+
+
+def pool_across_samples(samples):
+    samples = samples[np.isfinite(samples)]
+    if samples.shape[0] == 0:
+        return np.nan
+    pooled_samples = np.nanmean(samples.real)
+    return pooled_samples
 
 
 # Load PCs
@@ -215,5 +223,9 @@ attB = np.concatenate([geoB, texB], axis=1)
 lfeats = compute_features(attA, attB, idA, idB, searchSize)
 
 # compute_predictors testing
-preds = compute_predictors(lfeats)
-print(preds)
+preds, predNames = compute_predictors(lfeats)
+numPreds = 40
+lcpointpca = np.zeros(numPreds)
+for i in range(numPreds):
+    lcpointpca[i] = pool_across_samples(preds[:, i])
+print(*lcpointpca, sep='\n')
