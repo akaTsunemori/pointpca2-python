@@ -97,15 +97,88 @@ def compute_features(attA, attB, idA, idB, searchSize):
     return local_feats
 
 
-def compute_predictors():
-    pass
+def rel_diff(X, Y):
+    return 1 - np.abs(X - Y) / (np.abs(X) + np.abs(Y) + np.finfo(float).eps)
 
 
-class PointPCA2:
-    def __init__(self, 
-            ref: o3d.geometry.PointCloud, 
-            test: o3d.geometry.PointCloud) -> None:
-        pass
+def compute_predictors(lfeats):
+    predNames = ['t_mu_y', 't_mu_u', 't_mu_v',
+                 't_var_y', 't_var_u', 't_var_v',
+                 't_cov_y', 't_cov_u', 't_cov_v',
+                 't_varsum',
+                 't_omnivariance',
+                 't_entropy',
+                 'g_pB2pA',
+                 'g_vAB2plA_x', 'g_vAB2plA_y', 'g_vAB2plA_z',
+                 'g_pA2plA_y', 'g_pA2plA_z',
+                 'g_pB2cA',
+                 'g_pB2plA_y', 'g_pB2plA_z',
+                 'g_cB2cA',
+                 'g_cB2plA_y', 'g_cB2plA_z',
+                 'g_var_x', 'g_var_y', 'g_var_z',
+                 'g_cov_x', 'g_cov_y', 'g_cov_z',
+                 'g_omnivariance',
+                 'g_entropy',
+                 'g_anisotropy',
+                 'g_planarity',
+                 'g_linearity',
+                 'g_surfaceVariation',
+                 'g_sphericity',
+                 'g_asim_y',
+                 'g_paralellity_x', 'g_paralellity_z']
+    pA = lfeats[:, 0:3]
+    pB = lfeats[:, 3:6]
+    tmeanA = lfeats[:, 6:9]
+    gmeanB = lfeats[:, 9:12]
+    tmeanB = lfeats[:, 12:15]
+    gvarA = lfeats[:, 15:18]
+    gvarB = lfeats[:, 21:24]
+    tvarA = lfeats[:, 18:21]
+    tvarB = lfeats[:, 24:27]
+    gcovAB = lfeats[:, 27:30]
+    tcovAB = lfeats[:, 30:33]
+    geigvecB_x = lfeats[:, 33:36]
+    geigvecB_y = lfeats[:, 36:39]
+    geigvecB_z = lfeats[:, 39:42]
+    # Initialization
+    preds = np.nan * np.ones((lfeats.shape[0], 40))
+    # Textural predictors
+    preds[:, 0:3] = rel_diff(tmeanA, tmeanB)
+    preds[:, 3:6] = rel_diff(tvarA, tvarB)
+    preds[:, 6:9] = np.abs(np.sqrt(tvarA) * np.sqrt(tvarB) - tcovAB) / (np.sqrt(tvarA) * np.sqrt(tvarB) + np.finfo(float).eps)
+    preds[:, 9] = rel_diff(np.sum(tvarA, axis=1), np.sum(tvarB, axis=1))
+    preds[:, 10] = rel_diff(np.prod(tvarA, axis=1) ** (1 / 3), np.prod(tvarB, axis=1) ** (1 / 3))
+    preds[:, 11] = rel_diff(-np.sum(tvarA * np.log(tvarA + np.finfo(float).eps), axis=1),
+                            -np.sum(tvarB * np.log(tvarB + np.finfo(float).eps), axis=1))
+    # Geometric predictors
+    preds[:, 12] = np.sqrt(np.sum((pB - pA) ** 2, axis=1))
+    preds[:, 13] = np.abs(np.dot(pB - pA, np.array([1, 0, 0])))
+    preds[:, 14] = np.abs(np.dot(pB - pA, np.array([0, 1, 0])))
+    preds[:, 15] = np.abs(np.dot(pB - pA, np.array([0, 0, 1])))
+    preds[:, 16:18] = np.abs(pA[:, 1:3])
+    preds[:, 17] = np.abs(pA[:, 2])
+    preds[:, 18] = np.sqrt(np.sum(pB ** 2, axis=1))
+    preds[:, 19:21] = np.abs(pB[:, 1:3])
+    preds[:, 20] = np.abs(pB[:, 2])
+    preds[:, 21] = np.sqrt(np.sum(gmeanB ** 2, axis=1))
+    preds[:, 22:24] = np.abs(gmeanB[:, 1:3])
+    preds[:, 23] = np.abs(gmeanB[:, 2])
+    preds[:, 24:27] = rel_diff(gvarA, gvarB)
+    preds[:, 26:29] = np.abs(np.sqrt(gvarA) * np.sqrt(gvarB) - gcovAB) / (
+            np.sqrt(gvarA) * np.sqrt(gvarB) + np.finfo(float).eps)
+    preds[:, 29] = rel_diff(np.prod(gvarA, axis=1) ** (1 / 3), np.prod(gvarB, axis=1) ** (1 / 3))
+    preds[:, 30] = rel_diff(-np.sum(gvarA * np.log(gvarA + np.finfo(float).eps), axis=1),
+                            -np.sum(gvarB * np.log(gvarB + np.finfo(float).eps), axis=1))
+    preds[:, 31] = rel_diff((gvarA[:, 0] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 2]) / gvarB[:, 0])
+    preds[:, 32] = rel_diff((gvarA[:, 1] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 1] - gvarB[:, 2]) / gvarB[:, 0])
+    preds[:, 33] = rel_diff((gvarA[:, 0] - gvarA[:, 1]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 1]) / gvarB[:, 0])
+    preds[:, 34] = rel_diff(gvarA[:, 2] / np.sum(gvarA, axis=1), gvarB[:, 2] / np.sum(gvarB, axis=1))
+    preds[:, 35] = rel_diff(gvarA[:, 2] / gvarA[:, 0], gvarB[:, 2] / gvarB[:, 0])
+    preds[:, 36] = 1 - 2 * np.arccos(np.abs(np.sum(np.array([0, 1, 0]) * geigvecB_y, axis=1) / (
+        np.sqrt(np.sum(np.array([0, 1, 0]) ** 2)) * np.sqrt(np.sum(geigvecB_y ** 2, axis=1))))) / np.pi
+    preds[:, 37] = 1 - np.sum(np.tile([1, 0, 0], (geigvecB_x.shape[0], 1)) * geigvecB_x, axis=1)
+    preds[:, 38] = 1 - np.sum(np.tile([0, 0, 1], (geigvecB_z.shape[0], 1)) * geigvecB_z, axis=1)
+    return preds
 
 
 # Load PCs
@@ -140,3 +213,7 @@ texB = texB.reshape(-1, 1) if texB.ndim == 1 else texB
 attA = np.concatenate([geoA, texA], axis=1)
 attB = np.concatenate([geoB, texB], axis=1) 
 lfeats = compute_features(attA, attB, idA, idB, searchSize)
+
+# compute_predictors testing
+preds = compute_predictors(lfeats)
+print(preds)
