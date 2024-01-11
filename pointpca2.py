@@ -3,7 +3,7 @@ import open3d as o3d
 from scipy.spatial import KDTree
 
 
-searchSize = 3
+searchSize = 10
 numPreds = 40
 
 
@@ -44,16 +44,9 @@ def rgb_to_yuv(rgb):
 
 
 def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
-    distances = []
-    indices = []
     kdtree = KDTree(va)
-    for pb in vb:
-        distance, index = kdtree.query(pb, k=search_size, p=2)
-        distances.append(distance)
-        indices.append(index)
-    distances = np.asarray(distances)
-    indices = np.asarray(indices)
-    return (distances, indices)
+    distances, indices = kdtree.query(vb, k=search_size, p=2)
+    return distances, indices
 
 
 def compute_features(attA, attB, idA, idB, searchSize):
@@ -156,32 +149,29 @@ def compute_predictors(lfeats):
                             -np.sum(tvarB * np.log(tvarB + np.finfo(float).eps), axis=1))
     # Geometric predictors
     preds[:, 12] = np.sqrt(np.sum((pB - pA) ** 2, axis=1))
-    preds[:, 13] = np.abs(np.dot(pB - pA, np.array([1, 0, 0])))
-    preds[:, 14] = np.abs(np.dot(pB - pA, np.array([0, 1, 0])))
-    preds[:, 15] = np.abs(np.dot(pB - pA, np.array([0, 0, 1])))
+    preds[:, 13] = np.abs(np.sum((pB - pA) * np.tile([1, 0, 0], (pA.shape[0], 1)), axis=1))
+    preds[:, 14] = np.abs(np.sum((pB - pA) * np.tile([0, 1, 0], (pA.shape[0], 1)), axis=1))
+    preds[:, 15] = np.abs(np.sum((pB - pA) * np.tile([0, 0, 1], (pA.shape[0], 1)), axis=1))
     preds[:, 16:18] = np.abs(pA[:, 1:3])
-    preds[:, 17] = np.abs(pA[:, 2])
-    preds[:, 18] = np.sqrt(np.sum(pB ** 2, axis=1))
+    preds[:, 18] = np.sqrt(np.sum(pB**2, axis=1))
     preds[:, 19:21] = np.abs(pB[:, 1:3])
-    preds[:, 20] = np.abs(pB[:, 2])
     preds[:, 21] = np.sqrt(np.sum(gmeanB ** 2, axis=1))
     preds[:, 22:24] = np.abs(gmeanB[:, 1:3])
-    preds[:, 23] = np.abs(gmeanB[:, 2])
     preds[:, 24:27] = rel_diff(gvarA, gvarB)
-    preds[:, 26:29] = np.abs(np.sqrt(gvarA) * np.sqrt(gvarB) - gcovAB) / (
+    preds[:, 27:30] = np.abs(np.sqrt(gvarA) * np.sqrt(gvarB) - gcovAB) / (
             np.sqrt(gvarA) * np.sqrt(gvarB) + np.finfo(float).eps)
-    preds[:, 29] = rel_diff(np.prod(gvarA, axis=1) ** (1 / 3), np.prod(gvarB, axis=1) ** (1 / 3))
-    preds[:, 30] = rel_diff(-np.sum(gvarA * np.log(gvarA + np.finfo(float).eps), axis=1),
+    preds[:, 30] = rel_diff(np.prod(gvarA, axis=1) ** (1 / 3), np.prod(gvarB, axis=1) ** (1 / 3))
+    preds[:, 31] = rel_diff(-np.sum(gvarA * np.log(gvarA + np.finfo(float).eps), axis=1),
                             -np.sum(gvarB * np.log(gvarB + np.finfo(float).eps), axis=1))
-    preds[:, 31] = rel_diff((gvarA[:, 0] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 2]) / gvarB[:, 0])
-    preds[:, 32] = rel_diff((gvarA[:, 1] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 1] - gvarB[:, 2]) / gvarB[:, 0])
-    preds[:, 33] = rel_diff((gvarA[:, 0] - gvarA[:, 1]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 1]) / gvarB[:, 0])
-    preds[:, 34] = rel_diff(gvarA[:, 2] / np.sum(gvarA, axis=1), gvarB[:, 2] / np.sum(gvarB, axis=1))
-    preds[:, 35] = rel_diff(gvarA[:, 2] / gvarA[:, 0], gvarB[:, 2] / gvarB[:, 0])
-    preds[:, 36] = 1 - 2 * np.arccos(np.abs(np.sum(np.array([0, 1, 0]) * geigvecB_y, axis=1) / (
+    preds[:, 32] = rel_diff((gvarA[:, 0] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 2]) / gvarB[:, 0])
+    preds[:, 33] = rel_diff((gvarA[:, 1] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 1] - gvarB[:, 2]) / gvarB[:, 0])
+    preds[:, 34] = rel_diff((gvarA[:, 0] - gvarA[:, 1]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 1]) / gvarB[:, 0])
+    preds[:, 35] = rel_diff(gvarA[:, 2] / np.sum(gvarA, axis=1), gvarB[:, 2] / np.sum(gvarB, axis=1))
+    preds[:, 36] = rel_diff(gvarA[:, 2] / gvarA[:, 0], gvarB[:, 2] / gvarB[:, 0])
+    preds[:, 37] = 1 - 2 * np.arccos(np.abs(np.sum(np.array([0, 1, 0]) * geigvecB_y, axis=1) / (
         np.sqrt(np.sum(np.array([0, 1, 0]) ** 2)) * np.sqrt(np.sum(geigvecB_y ** 2, axis=1))))) / np.pi
-    preds[:, 37] = 1 - np.sum(np.tile([1, 0, 0], (geigvecB_x.shape[0], 1)) * geigvecB_x, axis=1)
-    preds[:, 38] = 1 - np.sum(np.tile([0, 0, 1], (geigvecB_z.shape[0], 1)) * geigvecB_z, axis=1)
+    preds[:, 38] = 1 - np.sum(np.tile([1, 0, 0], (geigvecB_x.shape[0], 1)) * geigvecB_x, axis=1)
+    preds[:, 39] = 1 - np.sum(np.tile([0, 0, 1], (geigvecB_z.shape[0], 1)) * geigvecB_z, axis=1)
     return preds, predNames
 
 
@@ -194,8 +184,8 @@ def pool_across_samples(samples):
 
 
 # Load PCs
-pc1 = o3d.io.read_point_cloud('matlab_dump/pc1.ply')
-pc2 = o3d.io.read_point_cloud('matlab_dump/pc2.ply')
+pc1 = o3d.io.read_point_cloud('pc3.ply')
+pc2 = o3d.io.read_point_cloud('pc4.ply')
 
 # pc_duplicate_merging testing
 print('pc_duplicate_merging')
@@ -221,9 +211,11 @@ attB = np.concatenate([geoB, texB], axis=1)
 lfeats = compute_features(attA, attB, idA, idB, searchSize)
 
 # compute_predictors testing
+print('lfeats')
 preds, predNames = compute_predictors(lfeats)
 
 # pool_across_samples testing
+print('lcpointpca')
 lcpointpca = np.zeros(numPreds)
 for i in range(numPreds):
     lcpointpca[i] = pool_across_samples(preds[:, i])
