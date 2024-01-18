@@ -50,6 +50,7 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
 
 
 def compute_features(attA, attB, idA, idB, searchSize):
+    # The bug is probably in this function
     local_feats = np.empty((attA.shape[0], 42))
     for i in range(attA.shape[0]):
         dataA = attA[idA[i, :searchSize], :]
@@ -58,14 +59,14 @@ def compute_features(attA, attB, idA, idB, searchSize):
         texA = dataA[:, 3:6]
         geoB = dataB[:, :3]
         texB = dataB[:, 3:6]
-        covMatrixA = np.cov(geoA, rowvar=False)
+        covMatrixA = np.cov(geoA, rowvar=False) # Needs checking (cov)
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
-            _, eigvecsA = np.linalg.eigh(covMatrixA)
+            _, eigvecsA = np.linalg.eigh(covMatrixA) # Needs checking (pcacov)
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
-        geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA
+        geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA # Needs checking (matrix multiplication)
         geoB_prA = (geoB - np.mean(geoA, axis=0)) @ eigvecsA
         meanA = np.mean(np.concatenate((geoA_prA, texA), axis=1), axis=0)
         meanB = np.mean(np.concatenate((geoB_prA, texB), axis=1), axis=0)
@@ -207,7 +208,7 @@ _, idB = knnsearch(geoB, geoA, searchSize)
 # compute_features testing
 print('compute_features')
 attA = np.concatenate([geoA, texA], axis=1)
-attB = np.concatenate([geoB, texB], axis=1) 
+attB = np.concatenate([geoB, texB], axis=1)
 lfeats = compute_features(attA, attB, idA, idB, searchSize)
 
 # compute_predictors testing
