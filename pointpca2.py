@@ -44,13 +44,14 @@ def rgb_to_yuv(rgb):
 
 
 def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
+    # This function needs fixing as it's not returning the same values as the
+    # knnsearch function on MATLAB.
     kdtree = KDTree(va)
     distances, indices = kdtree.query(vb, k=search_size, p=2)
     return distances, indices
 
 
 def compute_features(attA, attB, idA, idB, searchSize):
-    # The bug is probably in this function
     local_feats = np.empty((attA.shape[0], 42))
     for i in range(attA.shape[0]):
         dataA = attA[idA[i, :searchSize], :]
@@ -59,14 +60,14 @@ def compute_features(attA, attB, idA, idB, searchSize):
         texA = dataA[:, 3:6]
         geoB = dataB[:, :3]
         texB = dataB[:, 3:6]
-        covMatrixA = np.cov(geoA, rowvar=False) # Needs checking (cov)
+        covMatrixA = np.cov(geoA, rowvar=False)
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
-            _, eigvecsA = np.linalg.eigh(covMatrixA) # Needs checking (pcacov)
+            _, eigvecsA = np.linalg.eigh(covMatrixA)
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
-        geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA # Needs checking (matrix multiplication)
+        geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA
         geoB_prA = (geoB - np.mean(geoA, axis=0)) @ eigvecsA
         meanA = np.mean(np.concatenate((geoA_prA, texA), axis=1), axis=0)
         meanB = np.mean(np.concatenate((geoB_prA, texB), axis=1), axis=0)
