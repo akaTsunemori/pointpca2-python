@@ -8,6 +8,7 @@ numPreds = 40
 
 
 def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
+    # Needs fixing
     geomIn = np.asarray(pcIn.points)
     colorsIn = np.asarray(pcIn.colors)
     vertices, ind_v = np.unique(geomIn, axis=0, return_index=True)
@@ -44,8 +45,6 @@ def rgb_to_yuv(rgb):
 
 
 def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
-    # This function needs fixing as it's not returning the same values as the
-    # knnsearch function on MATLAB.
     kdtree = KDTree(va)
     distances, indices = kdtree.query(vb, k=search_size, p=2)
     return distances, indices
