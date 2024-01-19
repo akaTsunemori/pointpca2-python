@@ -33,9 +33,7 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
         print('Warning: Duplicated points found.')
         if colorsIn.shape[0] != 0:
             print('Color blending is applied.')
-            ind_v = np.lexsort(geomIn.T)
-            vertices_sorted = geomIn[ind_v]
-            colors_sorted = colorsIn[ind_v]
+            vertices_sorted, colors_sorted = sort_pc(geomIn, colorsIn)
             d = np.diff(vertices_sorted, axis=0)
             sd = np.sum(np.abs(d), axis=1) > 0
             id = np.concatenate(([0], np.where(sd)[0] + 1, [vertices_sorted.shape[0]]))
