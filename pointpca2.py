@@ -92,7 +92,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         varA = np.mean(devmeanA**2, axis=0)
         varB = np.mean(devmeanB**2, axis=0)
         covAB = np.mean(devmeanA * devmeanB, axis=0)
-        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=0)
+        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=0) # The bug is identified here, it does not happen on covMatrixA
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
