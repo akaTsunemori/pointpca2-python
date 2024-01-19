@@ -74,7 +74,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         texA = dataA[:, 3:6]
         geoB = dataB[:, :3]
         texB = dataB[:, 3:6]
-        covMatrixA = np.cov(geoA, rowvar=False)
+        covMatrixA = np.cov(geoA, rowvar=False, ddof=0)
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
@@ -90,7 +90,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         varA = np.mean(devmeanA**2, axis=0)
         varB = np.mean(devmeanB**2, axis=0)
         covAB = np.mean(devmeanA * devmeanB, axis=0)
-        covMatrixB = np.cov(geoB_prA, rowvar=False)
+        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=0)
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
