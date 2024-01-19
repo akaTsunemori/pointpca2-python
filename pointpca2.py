@@ -78,7 +78,9 @@ def compute_features(attA, attB, idA, idB, searchSize):
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
-            _, eigvecsA = np.linalg.eigh(covMatrixA)
+            eigenvalues, eigvecsA = np.linalg.eigh(covMatrixA)
+            sorted_indices = np.argsort(eigenvalues)[::-1]
+            eigvecsA = eigvecsA[:, sorted_indices]
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
         geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA
@@ -94,7 +96,9 @@ def compute_features(attA, attB, idA, idB, searchSize):
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
-            _, eigvecsB = np.linalg.eigh(covMatrixB)
+            eigenvalues, eigvecsB = np.linalg.eigh(covMatrixB)
+            sorted_indices = np.argsort(eigenvalues)[::-1]
+            eigvecsB = eigvecsB[:, sorted_indices]
             if eigvecsB.shape[1] != 3:
                 eigvecsB = np.full((3, 3), np.nan)
         local_feats[i, :] = np.concatenate((geoA_prA[0],          # 1-3
