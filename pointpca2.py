@@ -65,6 +65,13 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
     return distances, indices
 
 
+def cov(data):
+    means = np.mean(data, axis=0)
+    centered_data = data - means
+    covariance_matrix = np.dot(centered_data.T, centered_data) / (data.shape[0] - 1)
+    return covariance_matrix
+
+
 def compute_features(attA, attB, idA, idB, searchSize):
     local_feats = np.empty((attA.shape[0], 42))
     for i in range(attA.shape[0]):
@@ -74,7 +81,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         texA = dataA[:, 3:6]
         geoB = dataB[:, :3]
         texB = dataB[:, 3:6]
-        covMatrixA = np.cov(geoA, rowvar=False, ddof=0)
+        covMatrixA = cov(geoA)
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
@@ -92,7 +99,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         varA = np.mean(devmeanA**2, axis=0)
         varB = np.mean(devmeanB**2, axis=0)
         covAB = np.mean(devmeanA * devmeanB, axis=0)
-        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=0) # The bug is identified here, it does not happen on covMatrixA
+        covMatrixB = cov(geoB_prA)
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
