@@ -7,8 +7,25 @@ searchSize = 10
 numPreds = 40
 
 
+def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
+    pc = np.concatenate((points, colors), axis=1)
+    py_list = pc.tolist()
+    py_list.sort()
+    pc = np.asarray(py_list)
+    return pc[:, :3], pc[:, 3:]
+
+
+def load_pc(path):
+    pc = o3d.io.read_point_cloud(path)
+    points, colors = np.asarray(pc.points), np.asarray(pc.colors)
+    points, colors = sort_pc(points, colors)
+    pc = o3d.geometry.PointCloud()
+    pc.points = o3d.utility.Vector3dVector(points)
+    pc.colors = o3d.utility.Vector3dVector(colors)
+    return pc
+
+
 def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
-    # Needs fixing
     geomIn = np.asarray(pcIn.points)
     colorsIn = np.asarray(pcIn.colors)
     vertices, ind_v = np.unique(geomIn, axis=0, return_index=True)
@@ -185,8 +202,8 @@ def pool_across_samples(samples):
 
 
 # Load PCs
-pc1 = o3d.io.read_point_cloud('pc3.ply')
-pc2 = o3d.io.read_point_cloud('pc4.ply')
+pc1 = load_pc('pc3.ply')
+pc2 = load_pc('pc4.ply')
 
 # pc_duplicate_merging testing
 print('pc_duplicate_merging')
