@@ -1,5 +1,6 @@
 import numpy as np
 import open3d as o3d
+from scipy.linalg import eigh
 from scipy.spatial import KDTree
 
 
@@ -11,13 +12,14 @@ def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
     pc = np.concatenate((points, colors), axis=1)
     py_list = pc.tolist()
     py_list.sort()
-    pc = np.asarray(py_list)
+    pc = np.asarray(py_list, dtype=np.double)
     return pc[:, :3], pc[:, 3:]
 
 
 def load_pc(path):
     pc = o3d.io.read_point_cloud(path)
-    points, colors = np.asarray(pc.points), np.asarray(pc.colors)
+    points = np.asarray(pc.points, dtype=np.double)
+    colors = np.asarray(pc.colors, dtype=np.double)
     points, colors = sort_pc(points, colors)
     pc = o3d.geometry.PointCloud()
     pc.points = o3d.utility.Vector3dVector(points)
@@ -36,10 +38,12 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
             vertices_sorted, colors_sorted = sort_pc(geomIn, colorsIn)
             d = np.diff(vertices_sorted, axis=0)
             sd = np.sum(np.abs(d), axis=1) > 0
-            id = np.concatenate(([0], np.where(sd)[0] + 1, [vertices_sorted.shape[0]]))
+            id = np.concatenate(
+                ([0], np.where(sd)[0] + 1, [vertices_sorted.shape[0]]))
             colors = np.zeros((len(id) - 1, 3))
             for j in range(len(id)-1):
-                colors[j, :] = np.round(np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
+                colors[j, :] = np.round(
+                    np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
             id = id[:-1]
             vertices = vertices_sorted[id, :]
             colorsIn = colors
@@ -68,8 +72,16 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
 def cov(data):
     means = np.mean(data, axis=0)
     centered_data = data - means
-    covariance_matrix = np.dot(centered_data.T, centered_data) / (data.shape[0] - 1)
+    covariance_matrix = np.dot(
+        centered_data.T, centered_data) / (data.shape[0] - 1)
     return covariance_matrix
+
+
+def pcacov(cov_matrix):
+    eigenvalues, eigvecs = eigh(cov_matrix)
+    sorted_indices = np.argsort(eigenvalues)[::-1]
+    eigvecs = eigvecs[:, sorted_indices]
+    return eigenvalues, eigvecs
 
 
 def compute_features(attA, attB, idA, idB, searchSize):
@@ -85,9 +97,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
-            eigenvalues, eigvecsA = np.linalg.eigh(covMatrixA)
-            sorted_indices = np.argsort(eigenvalues)[::-1]
-            eigvecsA = eigvecsA[:, sorted_indices]
+            eigenvalues, eigvecsA = pcacov(covMatrixA)
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
         geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA
@@ -103,9 +113,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
-            eigenvalues, eigvecsB = np.linalg.eigh(covMatrixB)
-            sorted_indices = np.argsort(eigenvalues)[::-1]
-            eigvecsB = eigvecsB[:, sorted_indices]
+            eigenvalues, eigvecsB = pcacov(covMatrixB)
             if eigvecsB.shape[1] != 3:
                 eigvecsB = np.full((3, 3), np.nan)
         local_feats[i, :] = np.concatenate((geoA_prA[0],          # 1-3
@@ -169,16 +177,21 @@ def compute_predictors(lfeats):
     # Textural predictors
     preds[:, 0:3] = rel_diff(tmeanA, tmeanB)
     preds[:, 3:6] = rel_diff(tvarA, tvarB)
-    preds[:, 6:9] = np.abs(np.sqrt(tvarA) * np.sqrt(tvarB) - tcovAB) / (np.sqrt(tvarA) * np.sqrt(tvarB) + np.finfo(float).eps)
+    preds[:, 6:9] = np.abs(np.sqrt(tvarA) * np.sqrt(tvarB) - tcovAB) / \
+        (np.sqrt(tvarA) * np.sqrt(tvarB) + np.finfo(float).eps)
     preds[:, 9] = rel_diff(np.sum(tvarA, axis=1), np.sum(tvarB, axis=1))
-    preds[:, 10] = rel_diff(np.prod(tvarA, axis=1) ** (1 / 3), np.prod(tvarB, axis=1) ** (1 / 3))
+    preds[:, 10] = rel_diff(np.prod(tvarA, axis=1) **
+                            (1 / 3), np.prod(tvarB, axis=1) ** (1 / 3))
     preds[:, 11] = rel_diff(-np.sum(tvarA * np.log(tvarA + np.finfo(float).eps), axis=1),
                             -np.sum(tvarB * np.log(tvarB + np.finfo(float).eps), axis=1))
     # Geometric predictors
     preds[:, 12] = np.sqrt(np.sum((pB - pA) ** 2, axis=1))
-    preds[:, 13] = np.abs(np.sum((pB - pA) * np.tile([1, 0, 0], (pA.shape[0], 1)), axis=1))
-    preds[:, 14] = np.abs(np.sum((pB - pA) * np.tile([0, 1, 0], (pA.shape[0], 1)), axis=1))
-    preds[:, 15] = np.abs(np.sum((pB - pA) * np.tile([0, 0, 1], (pA.shape[0], 1)), axis=1))
+    preds[:, 13] = np.abs(
+        np.sum((pB - pA) * np.tile([1, 0, 0], (pA.shape[0], 1)), axis=1))
+    preds[:, 14] = np.abs(
+        np.sum((pB - pA) * np.tile([0, 1, 0], (pA.shape[0], 1)), axis=1))
+    preds[:, 15] = np.abs(
+        np.sum((pB - pA) * np.tile([0, 0, 1], (pA.shape[0], 1)), axis=1))
     preds[:, 16:18] = np.abs(pA[:, 1:3])
     preds[:, 18] = np.sqrt(np.sum(pB**2, axis=1))
     preds[:, 19:21] = np.abs(pB[:, 1:3])
@@ -186,19 +199,27 @@ def compute_predictors(lfeats):
     preds[:, 22:24] = np.abs(gmeanB[:, 1:3])
     preds[:, 24:27] = rel_diff(gvarA, gvarB)
     preds[:, 27:30] = np.abs(np.sqrt(gvarA) * np.sqrt(gvarB) - gcovAB) / (
-            np.sqrt(gvarA) * np.sqrt(gvarB) + np.finfo(float).eps)
-    preds[:, 30] = rel_diff(np.prod(gvarA, axis=1) ** (1 / 3), np.prod(gvarB, axis=1) ** (1 / 3))
+        np.sqrt(gvarA) * np.sqrt(gvarB) + np.finfo(float).eps)
+    preds[:, 30] = rel_diff(np.prod(gvarA, axis=1) **
+                            (1 / 3), np.prod(gvarB, axis=1) ** (1 / 3))
     preds[:, 31] = rel_diff(-np.sum(gvarA * np.log(gvarA + np.finfo(float).eps), axis=1),
                             -np.sum(gvarB * np.log(gvarB + np.finfo(float).eps), axis=1))
-    preds[:, 32] = rel_diff((gvarA[:, 0] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 2]) / gvarB[:, 0])
-    preds[:, 33] = rel_diff((gvarA[:, 1] - gvarA[:, 2]) / gvarA[:, 0], (gvarB[:, 1] - gvarB[:, 2]) / gvarB[:, 0])
-    preds[:, 34] = rel_diff((gvarA[:, 0] - gvarA[:, 1]) / gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 1]) / gvarB[:, 0])
-    preds[:, 35] = rel_diff(gvarA[:, 2] / np.sum(gvarA, axis=1), gvarB[:, 2] / np.sum(gvarB, axis=1))
-    preds[:, 36] = rel_diff(gvarA[:, 2] / gvarA[:, 0], gvarB[:, 2] / gvarB[:, 0])
+    preds[:, 32] = rel_diff((gvarA[:, 0] - gvarA[:, 2]) /
+                            gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 2]) / gvarB[:, 0])
+    preds[:, 33] = rel_diff((gvarA[:, 1] - gvarA[:, 2]) /
+                            gvarA[:, 0], (gvarB[:, 1] - gvarB[:, 2]) / gvarB[:, 0])
+    preds[:, 34] = rel_diff((gvarA[:, 0] - gvarA[:, 1]) /
+                            gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 1]) / gvarB[:, 0])
+    preds[:, 35] = rel_diff(
+        gvarA[:, 2] / np.sum(gvarA, axis=1), gvarB[:, 2] / np.sum(gvarB, axis=1))
+    preds[:, 36] = rel_diff(gvarA[:, 2] / gvarA[:, 0],
+                            gvarB[:, 2] / gvarB[:, 0])
     preds[:, 37] = 1 - 2 * np.arccos(np.abs(np.sum(np.array([0, 1, 0]) * geigvecB_y, axis=1) / (
         np.sqrt(np.sum(np.array([0, 1, 0]) ** 2)) * np.sqrt(np.sum(geigvecB_y ** 2, axis=1))))) / np.pi
-    preds[:, 38] = 1 - np.sum(np.tile([1, 0, 0], (geigvecB_x.shape[0], 1)) * geigvecB_x, axis=1)
-    preds[:, 39] = 1 - np.sum(np.tile([0, 0, 1], (geigvecB_z.shape[0], 1)) * geigvecB_z, axis=1)
+    preds[:, 38] = 1 - np.sum(np.tile([1, 0, 0],
+                              (geigvecB_x.shape[0], 1)) * geigvecB_x, axis=1)
+    preds[:, 39] = 1 - np.sum(np.tile([0, 0, 1],
+                              (geigvecB_z.shape[0], 1)) * geigvecB_z, axis=1)
     return preds, predNames
 
 
