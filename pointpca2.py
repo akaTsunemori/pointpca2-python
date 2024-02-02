@@ -55,12 +55,21 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
 
 
 def rgb_to_yuv(rgb):
-    r, g, b = rgb[:, 0], rgb[:, 1], rgb[:, 2]
-    y = 0.299 * r + 0.587 * g + 0.114 * b
-    u = 0.492 * (b - y)
-    v = 0.877 * (r - y)
-    yuv = np.column_stack((y, u, v))
-    return yuv.astype(int)
+    r = rgb[:, 0]
+    g = rgb[:, 1]
+    b = rgb[:, 2]
+    c = np.array([[0.2126, 0.7152, 0.0722],
+                  [-0.1146, -0.3854, 0.5000],
+                  [0.5000, -0.4542, -0.0468]])
+    o = np.array([0, 128, 128])
+    y = c[0, 0]*r + c[0, 1]*g + c[0, 2]*b + o[0]
+    u = c[1, 0]*r + c[1, 1]*g + c[1, 2]*b + o[1]
+    v = c[2, 0]*r + c[2, 1]*g + c[2, 2]*b + o[2]
+    yuv = np.column_stack(
+        (np.round(y).astype(np.uint8),
+         np.round(u).astype(np.uint8),
+         np.round(v).astype(np.uint8)))
+    return yuv
 
 
 def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
