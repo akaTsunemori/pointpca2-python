@@ -1,13 +1,4 @@
-import numpy as np
-
-
-def mse(y_true, y_pred):
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
-    if y_true.shape != y_pred.shape:
-        raise ValueError("Input arrays must have the same shape.")
-    mse = np.mean((y_true - y_pred) ** 2)
-    return mse
+import math
 
 
 y_true = [
@@ -59,13 +50,13 @@ y_pred = [
 1.0000,
 1.0000,
 1.0000,
-1.0000,
+0.9490,
 0.0000,
 0.0000,
-0.0000,
+0.0567,
+0.9490,
 1.0000,
-1.0000,
-1.0000,
+0.9490,
 4.2819,
 2.3596,
 1.9625,
@@ -96,4 +87,7 @@ y_pred = [
 0.6058,
 ]
 
-print(mse(y_true, y_pred))
+
+for i in range(len(y_true)):
+    if not math.isclose(y_true[i], y_pred[i], abs_tol=1e-1):
+        print(y_true[i], y_pred[i])

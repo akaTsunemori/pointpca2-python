@@ -3,6 +3,8 @@ import open3d as o3d
 from scipy.linalg import eigh
 from scipy.spatial import KDTree
 
+from utils import safe_read_point_cloud
+
 
 searchSize = 10
 numPreds = 40
@@ -17,7 +19,7 @@ def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
 
 
 def load_pc(path):
-    pc = o3d.io.read_point_cloud(path)
+    pc = safe_read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
     points, colors = sort_pc(points, colors)
@@ -32,9 +34,9 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
     colorsIn = np.asarray(pcIn.colors)
     vertices, ind_v = np.unique(geomIn, axis=0, return_index=True)
     if geomIn.shape[0] != vertices.shape[0]:
-        print('Warning: Duplicated points found.')
+        print('** Warning: Duplicated points found.')
         if colorsIn.shape[0] != 0:
-            print('Color blending is applied.')
+            print('** Color blending is applied.')
             vertices_sorted, colors_sorted = sort_pc(geomIn, colorsIn)
             d = np.diff(vertices_sorted, axis=0)
             sd = np.sum(np.abs(d), axis=1) > 0
@@ -240,40 +242,41 @@ def pool_across_samples(samples):
     return pooled_samples
 
 
-# Load PCs
-pc1 = load_pc('pc3.ply')
-pc2 = load_pc('pc4.ply')
+def lc_pointpca(filenameRef, filenameDis):
+    # Load PCs
+    pc1 = load_pc(filenameRef)
+    pc2 = load_pc(filenameDis)
+    # pc_duplicate_merging
+    print('pc_duplicate_merging')
+    pc1 = pc_duplicate_merging(pc1)
+    pc2 = pc_duplicate_merging(pc2)
+    # rgb_to_yuv
+    print('rgb_to_yuv')
+    geoA = np.asarray(pc1.points, dtype=np.longdouble)
+    texA = rgb_to_yuv(np.asarray(pc1.colors))
+    geoB = np.asarray(pc2.points, dtype=np.longdouble)
+    texB = rgb_to_yuv(np.asarray(pc2.colors))
+    # knnsearch
+    print('knnsearch')
+    _, idA = knnsearch(geoA, geoA, searchSize)
+    _, idB = knnsearch(geoB, geoA, searchSize)
+    # compute_features
+    print('compute_features')
+    attA = np.concatenate([geoA, texA], axis=1)
+    attB = np.concatenate([geoB, texB], axis=1)
+    lfeats = compute_features(attA, attB, idA, idB, searchSize)
+    # compute_predictors
+    print('lfeats')
+    preds, predNames = compute_predictors(lfeats)
+    # pool_across_samples
+    print('lcpointpca')
+    lcpointpca = np.zeros(numPreds)
+    for i in range(numPreds):
+        lcpointpca[i] = pool_across_samples(preds[:, i])
+    for val in lcpointpca:
+        print(f'{val:.4f},')
+    return lcpointpca
 
-# pc_duplicate_merging testing
-print('pc_duplicate_merging')
-pc1 = pc_duplicate_merging(pc1)
-pc2 = pc_duplicate_merging(pc2)
 
-# rgb_to_yuv testing
-print('rgb_to_yuv')
-geoA = np.asarray(pc1.points)
-texA = rgb_to_yuv(np.asarray(pc1.colors))
-geoB = np.asarray(pc2.points)
-texB = rgb_to_yuv(np.asarray(pc2.colors))
-
-# knnsearch testing
-print('knnsearch')
-_, idA = knnsearch(geoA, geoA, searchSize)
-_, idB = knnsearch(geoB, geoA, searchSize)
-
-# compute_features testing
-print('compute_features')
-attA = np.concatenate([geoA, texA], axis=1)
-attB = np.concatenate([geoB, texB], axis=1)
-lfeats = compute_features(attA, attB, idA, idB, searchSize)
-
-# compute_predictors testing
-print('lfeats')
-preds, predNames = compute_predictors(lfeats)
-
-# pool_across_samples testing
-print('lcpointpca')
-lcpointpca = np.zeros(numPreds)
-for i in range(numPreds):
-    lcpointpca[i] = pool_across_samples(preds[:, i])
-print(*lcpointpca, sep='\n')
+if __name__ == '__main__':
+    lc_pointpca('ipanemacut_original.ply', 'ipanemacut_pcl_low.ply')
