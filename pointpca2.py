@@ -2,6 +2,7 @@ import numpy as np
 import open3d as o3d
 from scipy.linalg import eigh
 from scipy.spatial import KDTree
+from os.path import exists
 
 from utils import safe_read_point_cloud
 
@@ -19,6 +20,8 @@ def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
 
 
 def load_pc(path):
+    if not exists(path):
+        raise Exception('Path does not exist!')
     pc = safe_read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
@@ -34,9 +37,9 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
     colorsIn = np.asarray(pcIn.colors)
     vertices, ind_v = np.unique(geomIn, axis=0, return_index=True)
     if geomIn.shape[0] != vertices.shape[0]:
-        print('** Warning: Duplicated points found.')
+        # print('** Warning: Duplicated points found.')
         if colorsIn.shape[0] != 0:
-            print('** Color blending is applied.')
+            # print('** Color blending is applied.')
             vertices_sorted, colors_sorted = sort_pc(geomIn, colorsIn)
             d = np.diff(vertices_sorted, axis=0)
             sd = np.sum(np.abs(d), axis=1) > 0
@@ -247,36 +250,36 @@ def lc_pointpca(filenameRef, filenameDis):
     pc1 = load_pc(filenameRef)
     pc2 = load_pc(filenameDis)
     # pc_duplicate_merging
-    print('pc_duplicate_merging')
+    # print('pc_duplicate_merging')
     pc1 = pc_duplicate_merging(pc1)
     pc2 = pc_duplicate_merging(pc2)
     # rgb_to_yuv
-    print('rgb_to_yuv')
+    # print('rgb_to_yuv')
     geoA = np.asarray(pc1.points, dtype=np.longdouble)
     texA = rgb_to_yuv(np.asarray(pc1.colors))
     geoB = np.asarray(pc2.points, dtype=np.longdouble)
     texB = rgb_to_yuv(np.asarray(pc2.colors))
     # knnsearch
-    print('knnsearch')
+    # print('knnsearch')
     _, idA = knnsearch(geoA, geoA, searchSize)
     _, idB = knnsearch(geoB, geoA, searchSize)
     # compute_features
-    print('compute_features')
+    # print('compute_features')
     attA = np.concatenate([geoA, texA], axis=1)
     attB = np.concatenate([geoB, texB], axis=1)
     lfeats = compute_features(attA, attB, idA, idB, searchSize)
     # compute_predictors
-    print('lfeats')
+    # print('lfeats')
     preds, predNames = compute_predictors(lfeats)
     # pool_across_samples
-    print('lcpointpca')
+    # print('lcpointpca')
     lcpointpca = np.zeros(numPreds)
     for i in range(numPreds):
         lcpointpca[i] = pool_across_samples(preds[:, i])
-    for val in lcpointpca:
-        print(f'{val:.4f},')
+    # for val in lcpointpca:
+    #     print(f'{val:.4f},')
     return lcpointpca
 
 
 if __name__ == '__main__':
-    lc_pointpca('ipanemacut_original.ply', 'ipanemacut_pcl_low.ply')
+    lc_pointpca('pcs/pc1.ply', 'pcs/pc1-noise.ply')

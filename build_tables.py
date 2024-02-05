@@ -19,7 +19,9 @@ df_apsipa['REFLOCATION'] = df_apsipa['REFLOCATION'].str.replace(
     '/home/pedro/databases/QualityDatabases/PointClouds/reference_APSIPA/', '/home/arthurc/Documents/APSIPA/')
 for index, row in df_apsipa.iterrows():
     signal, ref = row['SIGNAL'], row['REF']
+    signal, ref = signal.strip(), ref.strip()
     signal_location, ref_location = row['LOCATION'], row['REFLOCATION']
+    signal_location, ref_location = signal_location.strip(), ref_location.strip()
     print(f'{index}/{df_apsipa.shape[0]}')
     print('REF/SINGAL:', ref, signal)
     print('Computing pred pointpca')
