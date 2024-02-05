@@ -5,6 +5,7 @@ from pointpca2 import lc_pointpca
 
 
 eng = matlab.engine.start_matlab()
+eng.addpath('/home/arthurc/Documents/pointpca2/Matlab_FeatureExtraction/lib', nargout=0)
 print('MATLAB engine for Python successfully started!')
 FEATURES = [f'FEATURE_{i+1}' for i in range(40)]
 df_result_pred = pd.DataFrame(columns=['SIGNAL', 'REF', 'SCORE', *FEATURES])
@@ -19,12 +20,16 @@ df_apsipa['REFLOCATION'] = df_apsipa['REFLOCATION'].str.replace(
 for index, row in df_apsipa.iterrows():
     signal, ref = row['SIGNAL'], row['REF']
     signal_location, ref_location = row['LOCATION'], row['REFLOCATION']
+    print(f'{index}/{df_apsipa.shape[0]}')
+    print('REF/SINGAL:', ref, signal)
+    print('Computing pred pointpca')
     lcpointpca_pred = lc_pointpca(
-        f'{ref_location}/{ref}',
-        f'{signal_location}/{signal}')
-    lcpointpca_true = eng.lc_pointpca(
-        f'{ref_location}/{ref}',
         f'{signal_location}/{signal}',
+        f'{ref_location}/{ref}')
+    print('Computing true pointpca')
+    lcpointpca_true = eng.lc_pointpca(
+        f'{signal_location}/{signal}',
+        f'{ref_location}/{ref}',
         nargout=1)
     lcpointpca_true = np.array(lcpointpca_true)
     for i in range(len(FEATURES)):
