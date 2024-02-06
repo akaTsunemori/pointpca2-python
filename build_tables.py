@@ -23,12 +23,10 @@ for index, row in df_apsipa.iterrows():
     signal_location, ref_location = row['LOCATION'], row['REFLOCATION']
     signal_location, ref_location = signal_location.strip(), ref_location.strip()
     print(f'{index}/{df_apsipa.shape[0]}')
-    print('REF/SINGAL:', ref, signal)
-    print('Computing pred pointpca')
+    print('REF/SIGNAL:', ref, signal)
     lcpointpca_pred = lc_pointpca(
         f'{signal_location}/{signal}',
         f'{ref_location}/{ref}')
-    print('Computing true pointpca')
     lcpointpca_true = eng.lc_pointpca(
         f'{signal_location}/{signal}',
         f'{ref_location}/{ref}',
