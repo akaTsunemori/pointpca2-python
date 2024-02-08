@@ -18,7 +18,6 @@ df_dataset['LOCATION'] = df_dataset['LOCATION'].str.replace(
 df_dataset['REFLOCATION'] = df_dataset['REFLOCATION'].str.replace(
     '/home/pedro/databases/QualityDatabases/PointClouds/reference_APSIPA/', '/home/arthurc/Documents/APSIPA/')
 total_rows = len(df_dataset)
-df_dataset = df_dataset.iloc[:5,:]
 
 for index, row in df_dataset.iterrows():
     signal, ref = row['SIGNAL'], row['REF']
