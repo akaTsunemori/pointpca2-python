@@ -7,7 +7,7 @@ from os.path import exists
 from utils import safe_read_point_cloud
 
 
-searchSize = 10 # Default = 81
+searchSize = 81 # Default = 81
 numPreds = 40
 
 

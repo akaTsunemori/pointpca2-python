@@ -11,6 +11,10 @@ FEATURES = [f'FEATURE_{i+1}' for i in range(40)]
 df_result_pred = pd.DataFrame(columns=['SIGNAL', 'REF', 'SCORE', *FEATURES])
 df_result_true = pd.DataFrame(columns=['SIGNAL', 'REF', 'SCORE', *FEATURES])
 df_dataset = pd.read_csv('/home/arthurc/Documents/APSIPA/apsipa.csv')
+df_dataset['SIGNAL'] = df_dataset['SIGNAL'].str.strip()
+df_dataset['REF'] = df_dataset['REF'].str.strip()
+df_dataset['LOCATION'] = df_dataset['LOCATION'].str.strip()
+df_dataset['REFLOCATION'] = df_dataset['REFLOCATION'].str.strip()
 df_result_pred[['SIGNAL', 'REF', 'SCORE']] = df_dataset[['SIGNAL', 'REF', 'SCORE']]
 df_result_true[['SIGNAL', 'REF', 'SCORE']] = df_dataset[['SIGNAL', 'REF', 'SCORE']]
 df_dataset['LOCATION'] = df_dataset['LOCATION'].str.replace(
@@ -21,9 +25,7 @@ total_rows = len(df_dataset)
 
 for index, row in df_dataset.iterrows():
     signal, ref = row['SIGNAL'], row['REF']
-    signal, ref = signal.strip(), ref.strip()
     signal_location, ref_location = row['LOCATION'], row['REFLOCATION']
-    signal_location, ref_location = signal_location.strip(), ref_location.strip()
     print(f'{index}/{total_rows}')
     print('REF/SIGNAL:', ref, signal)
     try:
@@ -35,8 +37,8 @@ for index, row in df_dataset.iterrows():
         lcpointpca_true = np.array(lcpointpca_true)
         print('Computing lc_pointpca predicted')
         lcpointpca_pred = lc_pointpca(
-            f'{ref_location}/{ref}',
-            f'{signal_location}/{signal}')
+            f'{signal_location}/{signal}',
+            f'{ref_location}/{ref}')
     except Exception as e:
         print(e)
         continue
