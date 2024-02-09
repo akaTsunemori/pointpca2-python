@@ -59,6 +59,11 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
     return pcOut
 
 
+def denormalize_rgb(rgb):
+    colors_scaled = (rgb * 255).astype(np.uint8)
+    return colors_scaled
+
+
 def rgb_to_yuv(rgb):
     r = rgb[:, 0]
     g = rgb[:, 1]
@@ -255,10 +260,12 @@ def lc_pointpca(filenameRef, filenameDis):
     pc2 = pc_duplicate_merging(pc2)
     # rgb_to_yuv
     # print('rgb_to_yuv')
-    geoA = np.asarray(pc1.points, dtype=np.longdouble)
-    texA = rgb_to_yuv(np.asarray(pc1.colors))
-    geoB = np.asarray(pc2.points, dtype=np.longdouble)
-    texB = rgb_to_yuv(np.asarray(pc2.colors))
+    geoA = np.asarray(pc1.points, dtype=np.double)
+    texA = rgb_to_yuv(
+        denormalize_rgb(np.asarray(pc1.colors)))
+    geoB = np.asarray(pc2.points, dtype=np.double)
+    texB = rgb_to_yuv(
+        denormalize_rgb(np.asarray(pc2.colors)))
     # knnsearch
     # print('knnsearch')
     _, idA = knnsearch(geoA, geoA, searchSize)
