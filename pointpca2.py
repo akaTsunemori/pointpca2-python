@@ -1,13 +1,13 @@
 import numpy as np
 import open3d as o3d
-from scipy.linalg import eigh
+# from scipy.linalg import eigh
 from scipy.spatial import KDTree
 from os.path import exists
 
 from utils import safe_read_point_cloud
 
 
-searchSize = 81
+searchSize = 10 # Default = 81
 numPreds = 40
 
 
@@ -22,7 +22,8 @@ def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
 def load_pc(path):
     if not exists(path):
         raise Exception('Path does not exist!')
-    pc = safe_read_point_cloud(path)
+    # pc = safe_read_point_cloud(path)
+    pc = o3d.io.read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
     points, colors = sort_pc(points, colors)
@@ -68,9 +69,9 @@ def rgb_to_yuv(rgb):
     r = rgb[:, 0]
     g = rgb[:, 1]
     b = rgb[:, 2]
-    c = np.array([[0.2126, 0.7152, 0.0722],
-                  [-0.1146, -0.3854, 0.5000],
-                  [0.5000, -0.4542, -0.0468]])
+    c = np.array([[ 0.2126,  0.7152,  0.0722],
+                  [-0.1146, -0.3854,  0.5000],
+                  [ 0.5000, -0.4542, -0.0468]])
     o = np.array([0, 128, 128])
     y = c[0, 0]*r + c[0, 1]*g + c[0, 2]*b + o[0]
     u = c[1, 0]*r + c[1, 1]*g + c[1, 2]*b + o[1]
@@ -88,23 +89,15 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
     return distances, indices
 
 
-def cov(data):
-    means = np.mean(data, axis=0)
-    centered_data = data - means
-    covariance_matrix = np.dot(
-        centered_data.T, centered_data) / (data.shape[0] - 1)
-    return covariance_matrix
-
-
 def pcacov(cov_matrix):
-    eigenvalues, eigvecs = eigh(cov_matrix)
-    sorted_indices = np.argsort(eigenvalues)[::-1]
+    eigvals, eigvecs = np.linalg.eigh(cov_matrix)
+    sorted_indices = np.argsort(eigvals)[::-1]
     eigvecs = eigvecs[:, sorted_indices]
-    return eigenvalues, eigvecs
+    return eigvals, eigvecs
 
 
 def compute_features(attA, attB, idA, idB, searchSize):
-    local_feats = np.empty((attA.shape[0], 42))
+    local_feats = np.full((attA.shape[0], 42), np.nan)
     for i in range(attA.shape[0]):
         dataA = attA[idA[i, :searchSize], :]
         dataB = attB[idB[i, :searchSize], :]
@@ -112,11 +105,11 @@ def compute_features(attA, attB, idA, idB, searchSize):
         texA = dataA[:, 3:6]
         geoB = dataB[:, :3]
         texB = dataB[:, 3:6]
-        covMatrixA = cov(geoA)
+        covMatrixA = np.cov(geoA, rowvar=False, ddof=1)
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
-            eigenvalues, eigvecsA = pcacov(covMatrixA)
+            _, eigvecsA = pcacov(covMatrixA)
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
         geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA
@@ -128,11 +121,11 @@ def compute_features(attA, attB, idA, idB, searchSize):
         varA = np.mean(devmeanA**2, axis=0)
         varB = np.mean(devmeanB**2, axis=0)
         covAB = np.mean(devmeanA * devmeanB, axis=0)
-        covMatrixB = cov(geoB_prA)
+        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=1)
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
-            eigenvalues, eigvecsB = pcacov(covMatrixB)
+            _, eigvecsB = pcacov(covMatrixB)
             if eigvecsB.shape[1] != 3:
                 eigvecsB = np.full((3, 3), np.nan)
         local_feats[i, :] = np.concatenate((geoA_prA[0],          # 1-3
@@ -192,7 +185,7 @@ def compute_predictors(lfeats):
     geigvecB_y = lfeats[:, 36:39]
     geigvecB_z = lfeats[:, 39:42]
     # Initialization
-    preds = np.nan * np.ones((lfeats.shape[0], 40))
+    preds = np.full((lfeats.shape[0], 40), np.nan)
     # Textural predictors
     preds[:, 0:3] = rel_diff(tmeanA, tmeanB)
     preds[:, 3:6] = rel_diff(tvarA, tvarB)
