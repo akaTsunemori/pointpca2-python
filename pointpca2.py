@@ -1,8 +1,7 @@
 import numpy as np
 import open3d as o3d
-import cv2
 from scipy.spatial import KDTree
-from sklearn.decomposition import IncrementalPCA
+from scipy.linalg import svd
 from os.path import exists
 
 # from utils import safe_read_point_cloud
@@ -89,18 +88,22 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
     return distances, indices
 
 
-def svd_sign_correction(U, Sigma, VT):
-    max_abs_cols = np.argmax(np.abs(U), axis=0)
-    signs = np.sign(U[max_abs_cols, range(U.shape[1])])
-    U_corrected = U * signs
-    VT_corrected = VT * signs[:, np.newaxis]
-    Sigma_corrected = Sigma
-    return U_corrected, Sigma_corrected, VT_corrected
+def svd_sign_correction(u, v, u_based_decision=True):
+    if u_based_decision:
+        max_abs_cols = np.argmax(np.abs(u), axis=0)
+        signs = np.sign(u[max_abs_cols, range(u.shape[1])])
+    else:
+        max_abs_rows = np.argmax(np.abs(v), axis=1)
+        signs = np.sign(v[range(v.shape[0]), max_abs_rows])
+    u *= signs[np.newaxis, :]
+    v *= signs[:, np.newaxis]
+    return u, v
 
 
 def pcacov(cov_mat):
-    U, Sigma, VT = np.linalg.svd(cov_mat, full_matrices=False)
-    U_corrected, Sigma_corrected, VT_corrected = svd_sign_correction(U, Sigma, VT)
+    U, S, Vt = svd(cov_mat, full_matrices=False, check_finite=False)
+    U_corrected, Vt_corrected = \
+        svd_sign_correction(U, Vt, u_based_decision=False)
     return U_corrected
 
 
