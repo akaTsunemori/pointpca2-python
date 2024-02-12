@@ -1,10 +1,11 @@
 import numpy as np
 import open3d as o3d
-# from scipy.linalg import eigh
+import cv2
 from scipy.spatial import KDTree
+from sklearn.decomposition import IncrementalPCA
 from os.path import exists
 
-from utils import safe_read_point_cloud
+# from utils import safe_read_point_cloud
 
 
 searchSize = 81 # Default = 81
@@ -61,8 +62,7 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
 
 
 def denormalize_rgb(rgb):
-    colors_scaled = (rgb * 255).astype(np.uint8)
-    return colors_scaled
+    return (rgb * 255).astype(np.uint8)
 
 
 def rgb_to_yuv(rgb):
@@ -89,11 +89,11 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
     return distances, indices
 
 
-def pcacov(cov_matrix):
-    eigvals, eigvecs = np.linalg.eigh(cov_matrix)
-    sorted_indices = np.argsort(eigvals)[::-1]
-    eigvecs = eigvecs[:, sorted_indices]
-    return eigvals, eigvecs
+def pca(M):
+    pca = IncrementalPCA()
+    pca.fit(M)
+    eigvecs = pca.components_.T
+    return eigvecs
 
 
 def compute_features(attA, attB, idA, idB, searchSize):
@@ -105,27 +105,29 @@ def compute_features(attA, attB, idA, idB, searchSize):
         texA = dataA[:, 3:6]
         geoB = dataB[:, :3]
         texB = dataB[:, 3:6]
-        covMatrixA = np.cov(geoA, rowvar=False, ddof=1)
+        covMatrixA = np.cov(geoA, rowvar=False, ddof=1, dtype=np.double)
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
-            _, eigvecsA = pcacov(covMatrixA)
+            # eigvecsA = pcacov(covMatrixA)
+            eigvecsA = pca(geoA)
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
-        geoA_prA = (geoA - np.mean(geoA, axis=0)) @ eigvecsA
-        geoB_prA = (geoB - np.mean(geoA, axis=0)) @ eigvecsA
-        meanA = np.mean(np.concatenate((geoA_prA, texA), axis=1), axis=0)
-        meanB = np.mean(np.concatenate((geoB_prA, texB), axis=1), axis=0)
+        geoA_prA = (geoA - np.nanmean(geoA, axis=0)) @ eigvecsA
+        geoB_prA = (geoB - np.nanmean(geoA, axis=0)) @ eigvecsA
+        meanA = np.nanmean(np.concatenate((geoA_prA, texA), axis=1), axis=0)
+        meanB = np.nanmean(np.concatenate((geoB_prA, texB), axis=1), axis=0)
         devmeanA = np.concatenate((geoA_prA, texA), axis=1) - meanA
         devmeanB = np.concatenate((geoB_prA, texB), axis=1) - meanB
-        varA = np.mean(devmeanA**2, axis=0)
-        varB = np.mean(devmeanB**2, axis=0)
-        covAB = np.mean(devmeanA * devmeanB, axis=0)
-        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=1)
+        varA = np.nanmean(devmeanA**2, axis=0)
+        varB = np.nanmean(devmeanB**2, axis=0)
+        covAB = np.nanmean(devmeanA * devmeanB, axis=0)
+        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=1, dtype=np.double)
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
-            _, eigvecsB = pcacov(covMatrixB)
+            # eigvecsB = pcacov(covMatrixB)
+            eigvecsB = pca(geoB_prA)
             if eigvecsB.shape[1] != 3:
                 eigvecsB = np.full((3, 3), np.nan)
         local_feats[i, :] = np.concatenate((geoA_prA[0],          # 1-3
@@ -282,4 +284,6 @@ def lc_pointpca(filenameRef, filenameDis):
 
 
 if __name__ == '__main__':
-    lc_pointpca('pcs/pc1.ply', 'pcs/pc1-noise.ply')
+    lc_pointpca(
+        "/home/arthurc/Documents/APSIPA/PVS/tmc13_amphoriskos_vox10_dec_geom01_text01_octree-predlift.ply",
+        "/home/arthurc/Documents/APSIPA/references/amphoriskos_vox10.ply")
