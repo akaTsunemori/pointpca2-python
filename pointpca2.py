@@ -1,15 +1,18 @@
 import numpy as np
 import open3d as o3d
-import cv2
 from scipy.spatial import KDTree
-from sklearn.decomposition import IncrementalPCA
+from scipy.linalg import svd
 from os.path import exists
 
 # from utils import safe_read_point_cloud
 
 
-searchSize = 81 # Default = 81
+searchSize = 81  # Default = 81
 numPreds = 40
+
+
+def denormalize_rgb(rgb):
+    return (rgb * 255).astype(np.uint8)
 
 
 def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
@@ -27,6 +30,7 @@ def load_pc(path):
     pc = o3d.io.read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
+    colors = denormalize_rgb(colors)
     points, colors = sort_pc(points, colors)
     pc = o3d.geometry.PointCloud()
     pc.points = o3d.utility.Vector3dVector(points)
@@ -34,19 +38,18 @@ def load_pc(path):
     return pc
 
 
-def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
+def pc_duplicate_merging(pcIn):
     geomIn = np.asarray(pcIn.points)
-    colorsIn = np.asarray(pcIn.colors)
+    colorsIn = np.asarray(pcIn.colors) if pcIn.has_colors() else None
     vertices, ind_v = np.unique(geomIn, axis=0, return_index=True)
     if geomIn.shape[0] != vertices.shape[0]:
         # print('** Warning: Duplicated points found.')
         if colorsIn.shape[0] != 0:
             # print('** Color blending is applied.')
             vertices_sorted, colors_sorted = sort_pc(geomIn, colorsIn)
-            d = np.diff(vertices_sorted, axis=0)
-            sd = np.sum(np.abs(d), axis=1) > 0
-            id = np.concatenate(
-                ([0], np.where(sd)[0] + 1, [vertices_sorted.shape[0]]))
+            diff = np.diff(vertices_sorted, axis=0)
+            unique_indices = np.where(np.any(diff != 0, axis=1))[0] + 1
+            id = np.concatenate(([0], unique_indices, [len(vertices_sorted)]))
             colors = np.zeros((len(id) - 1, 3))
             for j in range(len(id)-1):
                 colors[j, :] = np.round(
@@ -61,17 +64,13 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
     return pcOut
 
 
-def denormalize_rgb(rgb):
-    return (rgb * 255).astype(np.uint8)
-
-
 def rgb_to_yuv(rgb):
     r = rgb[:, 0]
     g = rgb[:, 1]
     b = rgb[:, 2]
-    c = np.array([[ 0.2126,  0.7152,  0.0722],
+    c = np.array([[0.2126,  0.7152,  0.0722],
                   [-0.1146, -0.3854,  0.5000],
-                  [ 0.5000, -0.4542, -0.0468]])
+                  [0.5000, -0.4542, -0.0468]])
     o = np.array([0, 128, 128])
     y = c[0, 0]*r + c[0, 1]*g + c[0, 2]*b + o[0]
     u = c[1, 0]*r + c[1, 1]*g + c[1, 2]*b + o[1]
@@ -89,11 +88,23 @@ def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
     return distances, indices
 
 
-def pca(M):
-    pca = IncrementalPCA()
-    pca.fit(M)
-    eigvecs = pca.components_.T
-    return eigvecs
+def svd_sign_correction(u, v, u_based_decision=True):
+    if u_based_decision:
+        max_abs_cols = np.argmax(np.abs(u), axis=0)
+        signs = np.sign(u[max_abs_cols, range(u.shape[1])])
+    else:
+        max_abs_rows = np.argmax(np.abs(v), axis=1)
+        signs = np.sign(v[range(v.shape[0]), max_abs_rows])
+    u *= signs[np.newaxis, :]
+    v *= signs[:, np.newaxis]
+    return u, v
+
+
+def pcacov(cov_mat):
+    U, S, Vt = svd(cov_mat, full_matrices=False, check_finite=False)
+    U_corrected, Vt_corrected = \
+        svd_sign_correction(U, Vt, u_based_decision=False)
+    return U_corrected
 
 
 def compute_features(attA, attB, idA, idB, searchSize):
@@ -109,8 +120,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         if not np.all(np.isfinite(covMatrixA)):
             eigvecsA = np.full((3, 3), np.nan)
         else:
-            # eigvecsA = pcacov(covMatrixA)
-            eigvecsA = pca(geoA)
+            eigvecsA = pcacov(covMatrixA)
             if eigvecsA.shape[1] != 3:
                 eigvecsA = np.full((3, 3), np.nan)
         geoA_prA = (geoA - np.nanmean(geoA, axis=0)) @ eigvecsA
@@ -126,8 +136,7 @@ def compute_features(attA, attB, idA, idB, searchSize):
         if not np.all(np.isfinite(covMatrixB)):
             eigvecsB = np.full((3, 3), np.nan)
         else:
-            # eigvecsB = pcacov(covMatrixB)
-            eigvecsB = pca(geoB_prA)
+            eigvecsB = pcacov(covMatrixB)
             if eigvecsB.shape[1] != 3:
                 eigvecsB = np.full((3, 3), np.nan)
         local_feats[i, :] = np.concatenate((geoA_prA[0],          # 1-3
@@ -256,11 +265,9 @@ def lc_pointpca(filenameRef, filenameDis):
     # rgb_to_yuv
     # print('rgb_to_yuv')
     geoA = np.asarray(pc1.points, dtype=np.double)
-    texA = rgb_to_yuv(
-        denormalize_rgb(np.asarray(pc1.colors)))
+    texA = rgb_to_yuv(np.asarray(pc1.colors))
     geoB = np.asarray(pc2.points, dtype=np.double)
-    texB = rgb_to_yuv(
-        denormalize_rgb(np.asarray(pc2.colors)))
+    texB = rgb_to_yuv(np.asarray(pc2.colors))
     # knnsearch
     # print('knnsearch')
     _, idA = knnsearch(geoA, geoA, searchSize)
@@ -278,12 +285,10 @@ def lc_pointpca(filenameRef, filenameDis):
     lcpointpca = np.zeros(numPreds)
     for i in range(numPreds):
         lcpointpca[i] = pool_across_samples(preds[:, i])
-    # for val in lcpointpca:
-    #     print(f'{val:.4f},')
+    for val in lcpointpca:
+        print(f'{val:.4f},')
     return lcpointpca
 
 
 if __name__ == '__main__':
-    lc_pointpca(
-        "/home/arthurc/Documents/APSIPA/PVS/tmc13_amphoriskos_vox10_dec_geom01_text01_octree-predlift.ply",
-        "/home/arthurc/Documents/APSIPA/references/amphoriskos_vox10.ply")
+    lc_pointpca("pc8.ply", "pc8-noise.ply")
