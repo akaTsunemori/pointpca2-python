@@ -52,8 +52,7 @@ def pc_duplicate_merging(pcIn):
             id = np.concatenate(([0], unique_indices, [len(vertices_sorted)]))
             colors = np.zeros((len(id) - 1, 3))
             for j in range(len(id)-1):
-                colors[j, :] = np.round(
-                    np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
+                colors[j, :] = np.round(np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
             id = id[:-1]
             vertices = vertices_sorted[id, :]
             colorsIn = colors
