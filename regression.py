@@ -46,8 +46,8 @@ def one_group_out_regression(df: pd.DataFrame):
     return result_df
 
 
-df_pred = pd.read_csv('apsipa_pointpca2_pred_cleaned_v2.csv', index_col=0)
-df_true = pd.read_csv('apsipa_pointpca2_true_cleaned_v2.csv', index_col=0)
+df_pred = pd.read_csv('apsipa_pointpca2_pred_cleaned.csv', index_col=0)
+df_true = pd.read_csv('apsipa_pointpca2_true_cleaned.csv', index_col=0)
 # true = compute_regression(df_pred[FEATURES].values, df_pred['SCORE'].values, 'regression_true.csv')
 # pred = compute_regression(df_true[FEATURES].values, df_true['SCORE'].values, 'regression_pred.csv')
 # true.to_csv('regression_true.csv')

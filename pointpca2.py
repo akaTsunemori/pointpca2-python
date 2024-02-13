@@ -11,6 +11,10 @@ searchSize = 81 # Default = 81
 numPreds = 40
 
 
+def denormalize_rgb(rgb):
+    return (rgb * 255).astype(np.uint8)
+
+
 def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
     pc = np.concatenate((points, colors), axis=1)
     py_list = pc.tolist()
@@ -26,6 +30,7 @@ def load_pc(path):
     pc = o3d.io.read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
+    colors = denormalize_rgb(colors)
     points, colors = sort_pc(points, colors)
     pc = o3d.geometry.PointCloud()
     pc.points = o3d.utility.Vector3dVector(points)
@@ -33,23 +38,21 @@ def load_pc(path):
     return pc
 
 
-def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
+def pc_duplicate_merging(pcIn):
     geomIn = np.asarray(pcIn.points)
-    colorsIn = np.asarray(pcIn.colors)
+    colorsIn = np.asarray(pcIn.colors) if pcIn.has_colors() else None
     vertices, ind_v = np.unique(geomIn, axis=0, return_index=True)
     if geomIn.shape[0] != vertices.shape[0]:
         # print('** Warning: Duplicated points found.')
         if colorsIn.shape[0] != 0:
             # print('** Color blending is applied.')
             vertices_sorted, colors_sorted = sort_pc(geomIn, colorsIn)
-            d = np.diff(vertices_sorted, axis=0)
-            sd = np.sum(np.abs(d), axis=1) > 0
-            id = np.concatenate(
-                ([0], np.where(sd)[0] + 1, [vertices_sorted.shape[0]]))
+            diff = np.diff(vertices_sorted, axis=0)
+            unique_indices = np.where(np.any(diff != 0, axis=1))[0] + 1
+            id = np.concatenate(([0], unique_indices, [len(vertices_sorted)]))
             colors = np.zeros((len(id) - 1, 3))
             for j in range(len(id)-1):
-                colors[j, :] = np.round(
-                    np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
+                colors[j, :] = np.round(np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
             id = id[:-1]
             vertices = vertices_sorted[id, :]
             colorsIn = colors
@@ -58,10 +61,6 @@ def pc_duplicate_merging(pcIn: o3d.geometry.PointCloud):
     if colorsIn.shape[0] != 0:
         pcOut.colors = o3d.utility.Vector3dVector(colorsIn)
     return pcOut
-
-
-def denormalize_rgb(rgb):
-    return (rgb * 255).astype(np.uint8)
 
 
 def rgb_to_yuv(rgb):
@@ -265,11 +264,9 @@ def lc_pointpca(filenameRef, filenameDis):
     # rgb_to_yuv
     # print('rgb_to_yuv')
     geoA = np.asarray(pc1.points, dtype=np.double)
-    texA = rgb_to_yuv(
-        denormalize_rgb(np.asarray(pc1.colors)))
+    texA = rgb_to_yuv(np.asarray(pc1.colors))
     geoB = np.asarray(pc2.points, dtype=np.double)
-    texB = rgb_to_yuv(
-        denormalize_rgb(np.asarray(pc2.colors)))
+    texB = rgb_to_yuv(np.asarray(pc2.colors))
     # knnsearch
     # print('knnsearch')
     _, idA = knnsearch(geoA, geoA, searchSize)
@@ -293,6 +290,4 @@ def lc_pointpca(filenameRef, filenameDis):
 
 
 if __name__ == '__main__':
-    lc_pointpca(
-        "/home/arthurc/Documents/APSIPA/PVS/tmc13_amphoriskos_vox10_dec_geom01_text01_octree-predlift.ply",
-        "/home/arthurc/Documents/APSIPA/references/amphoriskos_vox10.ply")
+    lc_pointpca("pc8.ply", "pc8-noise.ply")
