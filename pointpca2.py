@@ -284,8 +284,8 @@ def lc_pointpca(filenameRef, filenameDis):
     lcpointpca = np.zeros(numPreds)
     for i in range(numPreds):
         lcpointpca[i] = pool_across_samples(preds[:, i])
-    for val in lcpointpca:
-        print(f'{val:.4f},')
+    # for val in lcpointpca:
+    #     print(f'{val:.4f},')
     return lcpointpca
 
 

@@ -47,7 +47,6 @@ df_dataset['LOCATION'] = df_dataset['LOCATION'].str.replace(
 df_dataset['REFLOCATION'] = df_dataset['REFLOCATION'].str.replace(
     '/home/pedro/databases/QualityDatabases/PointClouds/reference_APSIPA/', '/home/arthurc/Documents/APSIPA/')
 FEATURES = [f'FEATURE_{i+1}' for i in range(40)]
-
 tables = listdir('./tables')
 true_filename, pred_filename = get_latest_csv(tables)
 if not true_filename and not pred_filename:
@@ -62,7 +61,6 @@ if not true_filename:
     df_result_true[['SIGNAL', 'REF', 'SCORE']] = df_dataset[['SIGNAL', 'REF', 'SCORE']]
 else:
     df_result_true = pd.read_csv(f'tables/{true_filename}', index_col=0)
-
 for index, row in df_dataset.iterrows():
     output_true = f'tables/{index:03}_apsipa_pointpca2_true.csv'
     output_pred = f'tables/{index:03}_apsipa_pointpca2_pred.csv'
