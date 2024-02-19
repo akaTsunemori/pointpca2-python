@@ -3,6 +3,8 @@ from argparse import ArgumentParser
 from lazypredict.Supervised import LazyRegressor
 from scipy.stats import spearmanr, pearsonr
 from sklearn.model_selection import GroupKFold
+from os.path import exists
+from os import mkdir
 # from sklearn.model_selection import train_test_split
 
 
@@ -110,11 +112,13 @@ def main(args):
     # Python.to_csv('regression_Python.csv')
     MATLAB = one_group_out_regression(df_MATLAB)
     Python = one_group_out_regression(df_Python)
-    MATLAB.to_csv(f'regression_{dataset_name}_MATLAB_LeaveOneGroupOut.csv')
-    Python.to_csv(f'regression_{dataset_name}_Python_LeaveOneGroupOut.csv')
+    if not exists('./regressions'):
+        mkdir('regressions')
+    MATLAB.to_csv(f'regressions/{dataset_name}_MATLAB_regression_LeaveOneGroupOut.csv')
+    Python.to_csv(f'regressions/{dataset_name}_Python_regression_LeaveOneGroupOut.csv')
     MATLAB, Python = group_k_fold_regression(df_MATLAB, df_Python)
-    MATLAB.to_csv(f'regression_{dataset_name}_MATLAB_GroupKFold.csv')
-    Python.to_csv(f'regression_{dataset_name}_Python_GroupKFold.csv')
+    MATLAB.to_csv(f'regressions/{dataset_name}_MATLAB_regression_GroupKFold.csv')
+    Python.to_csv(f'regressions/{dataset_name}_Python_regression_GroupKFold.csv')
 
 
 if __name__ == '__main__':
