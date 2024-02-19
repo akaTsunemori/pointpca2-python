@@ -4,7 +4,7 @@ from scipy.spatial import KDTree
 from scipy.linalg import svd
 from os.path import exists
 
-# from utils import safe_read_point_cloud
+from utils.utils import safe_read_point_cloud
 
 
 searchSize = 81  # Default = 81
@@ -26,8 +26,8 @@ def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
 def load_pc(path):
     if not exists(path):
         raise Exception('Path does not exist!')
-    # pc = safe_read_point_cloud(path)
-    pc = o3d.io.read_point_cloud(path)
+    pc = safe_read_point_cloud(path)
+    # pc = o3d.io.read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
     colors = denormalize_rgb(colors)
