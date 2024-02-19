@@ -135,11 +135,11 @@ def build_tables(dataset_name, dataset_csv, pointpca2_path):
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument('--dataset_name', type=str,
+    parser.add_argument('dataset_name', type=str,
                         help='Example: APSIPA')
-    parser.add_argument('--dataset_csv', type=str,
+    parser.add_argument('dataset_csv', type=str,
                         help='Example: /home/user/Documents/APSIPA/apsipa.csv')
-    parser.add_argument('--pointpca2_path', type=str,
+    parser.add_argument('pointpca2_path', type=str,
                         help='Example: /home/user/Documents/pointpca2/')
     return parser.parse_args()
 

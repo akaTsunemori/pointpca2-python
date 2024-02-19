@@ -90,11 +90,11 @@ def group_k_fold_regression(df_MATLAB: pd.DataFrame, df_Python: pd.DataFrame):
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument('--csv_path_MATLAB', type=str,
+    parser.add_argument('csv_path_MATLAB', type=str,
                         help='./results/apsipa_pointpca2_MATLAB_cleaned.csv')
-    parser.add_argument('--csv_path_Python', type=str,
+    parser.add_argument('csv_path_Python', type=str,
                         help='./results/apsipa_pointpca2_Python_cleaned.csv')
-    parser.add_argument('--dataset_name', type=str,
+    parser.add_argument('dataset_name', type=str,
                         help='Example: APSIPA')
     return parser.parse_args()
 
