@@ -32,6 +32,26 @@ def get_latest_csv(filenames, suffix):
     return latest
 
 
+def cleanup(dataset_name, csv_path_MATLAB, csv_path_Python):
+    FEATURES = [f'FEATURE_{i+1}' for i in range(40)]
+    df_MATLAB = pd.read_csv(csv_path_MATLAB, index_col=0)
+    df_Python = pd.read_csv(csv_path_Python, index_col=0)
+    nan_indices_df1 = df_MATLAB[df_MATLAB[FEATURES].isnull().any(axis=1)].index
+    nan_indices_df2 = df_Python[df_Python[FEATURES].isnull().any(axis=1)].index
+    indices_to_drop = nan_indices_df1.union(nan_indices_df2)
+    df_MATLAB_cleaned = df_MATLAB.drop(indices_to_drop)
+    df_Python_cleaned = df_Python.drop(indices_to_drop)
+    are_equal = df_MATLAB_cleaned[['SIGNAL', 'REF', 'SCORE']].equals(
+        df_Python_cleaned[['SIGNAL', 'REF', 'SCORE']])
+    if not are_equal:
+        raise Exception(
+            'Error during tables cleanup. Cleaned datasets are not equal.')
+    if not exists('./results'):
+        mkdir('./results')
+    df_MATLAB_cleaned.to_csv(f'results/{dataset_name}_pointpca2_MATLAB_cleaned.csv')
+    df_Python_cleaned.to_csv(f'results/{dataset_name}_pointpca2_Python_cleaned.csv')
+
+
 def build_tables(dataset_name, dataset_csv, pointpca2_path):
     eng = matlab.engine.start_matlab()
     pointpca2_path = join(pointpca2_path, 'Matlab_FeatureExtraction', 'lib')
@@ -61,6 +81,7 @@ def build_tables(dataset_name, dataset_csv, pointpca2_path):
         df_result_MATLAB[common_columns] = df_dataset[common_columns]
     else:
         df_result_MATLAB = pd.read_csv(f'./tables/{dataset_name}/{MATLAB_filename}', index_col=0)
+    last_checkpoint_Python, last_checkpoint_MATLAB = None, None
     for index, row in df_dataset.iterrows():
         output_MATLAB = f'./tables/{dataset_name}/{index:06}_{dataset_name}_pointpca2_MATLAB.csv'
         output_Python = f'./tables/{dataset_name}/{index:06}_{dataset_name}_pointpca2_Python.csv'
@@ -97,12 +118,18 @@ def build_tables(dataset_name, dataset_csv, pointpca2_path):
                 df_result_MATLAB.at[index, FEATURES[i]] = lcpointpca_MATLAB[i]
             if not exists_Python:
                 df_result_Python.at[index, FEATURES[i]] = lcpointpca_Python[i]
+        last_checkpoint_Python, last_checkpoint_MATLAB = output_Python, output_MATLAB
         if not exists_MATLAB or not exists_Python:
             print('\tSaving checkpoints to disk')
         if not exists_MATLAB:
             df_result_MATLAB.to_csv(output_MATLAB)
         if not exists_Python:
             df_result_Python.to_csv(output_Python)
+    if last_checkpoint_Python and last_checkpoint_MATLAB:
+        print('Cleaning up tables and saving results')
+        cleanup(dataset_name, 
+                last_checkpoint_MATLAB, 
+                last_checkpoint_Python)
     eng.quit()
 
 
