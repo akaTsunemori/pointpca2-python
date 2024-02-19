@@ -127,8 +127,8 @@ def build_tables(dataset_name, dataset_csv, pointpca2_path):
             df_result_Python.to_csv(output_Python)
     if last_checkpoint_Python and last_checkpoint_MATLAB:
         print('Cleaning up tables and saving results')
-        cleanup(dataset_name, 
-                last_checkpoint_MATLAB, 
+        cleanup(dataset_name,
+                last_checkpoint_MATLAB,
                 last_checkpoint_Python)
     eng.quit()
 
@@ -136,11 +136,11 @@ def build_tables(dataset_name, dataset_csv, pointpca2_path):
 def get_args():
     parser = ArgumentParser()
     parser.add_argument('--dataset_name', type=str,
-                        default='APSIPA')
+                        help='Example: APSIPA')
     parser.add_argument('--dataset_csv', type=str,
-                        default='/home/arthurc/Documents/APSIPA/apsipa.csv')
+                        help='Example: /home/user/Documents/APSIPA/apsipa.csv')
     parser.add_argument('--pointpca2_path', type=str,
-                        default='/home/arthurc/Documents/pointpca2/')
+                        help='Example: /home/user/Documents/pointpca2/')
     return parser.parse_args()
 
 
@@ -158,7 +158,7 @@ def main(args):
     any of these files unless you've finished building the tables for the whole dataset.
     Doing so would compromise the (very simple) checkpoint system.
 
-    It is expected that the setup for 
+    It is expected that the setup for
     MATLAB (https://www.mathworks.com/products/matlab.html)
     and matlab.engine (https://pypi.org/project/matlabengine/)
     was properly done and tested.
