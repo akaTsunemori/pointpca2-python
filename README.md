@@ -6,14 +6,14 @@
 
 This project focuses on the adaptation of the [pointpca2](https://github.com/cwi-dis/pointpca2/) project (2023 Grand Challenge on Objective Quality Metrics for Volumetric Contents), written in MATLAB, into Python, aiming to replicate its functionality in a different programming ecosystem. The primary objective is to ensure that features generated from both environments are comparable and can be used interchangeably for further analysis. Upon successful replication, the project will proceed to utilize these features for regression analysis against a dataset's subjective scores. A comprehensive comparison of the performance of regressors, facilitated through Pearson and Spearman correlation coefficients, will be carried out for each version of the code. Furthermore, a statistical t-test will be conducted to rigorously compare the correlation results derived from both MATLAB and Python implementations, ensuring the validity and reliability of the adaptation process.
 
-## Key Objectives:
+## Key Objectives
 1. Code Adaptation: Convert the "pointpca2" project code from MATLAB to Python, ensuring that the core functionality and output remain consistent across both languages.
 2. Feature Generation: Generate PCA features using both the original MATLAB code and the newly developed Python code. We will validate the equivalence of these features through statistical methods to ensure that both implementations produce comparable results.
 3. Regression Analysis: Use the generated features to perform regression analysis against subjective scores in the dataset. This will involve using a set of regression models and fitting them with the features to predict the subjective scores. Calculate both Pearson and Spearman correlation coefficients for each regressor.
 4. Correlation Analysis: Plot the correlation coefficients for each regressor. This analysis will provide insights into the linear and rank-order relationships between predicted scores and actual subjective scores.
 5. Statistical Comparison: Conduct a t-test to statistically compare the correlation coefficients obtained from MATLAB and Python implementations. This step is critical to assess whether the differences in correlations (if any) are statistically significant, providing a quantitative measure of the adaptation's fidelity.
 
-## Expected Outcomes:
+## Expected Outcomes
 - A fully functional Python version of the "pointpca2" MATLAB project, verified for accuracy and equivalence.
 - A detailed comparison of regression model performances using PCA features from both MATLAB and Python implementations.
 - A statistical analysis report providing evidence on the equivalence (or differences) in correlation coefficients derived from both languages' codes.
