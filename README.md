@@ -43,7 +43,10 @@ conda activate pointpca2-python
 - #### build_tables.py
     Builds the tables with pointpca2 features for both the Python and MATLAB algorithms.
     This script expects that the dataset's csv's columns follow the format:
-    SIGNAL,REF,SCORE,LOCATION,REFLOCATION,ATTACK,CLASS
+  
+    |SIGNAL  |REF     |SCORE   |LOCATION|REFLOCATION|ATTACK  |CLASS   |
+    |--------|--------|--------|--------|-----------|--------|--------|
+
     It also expects that the informed locations are correct.
 
     Any exceptions happened during the computations of the lc_pointpca will be ignored
