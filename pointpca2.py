@@ -4,7 +4,7 @@ from scipy.spatial import KDTree
 from scipy.linalg import svd
 from os.path import exists
 
-from utils.utils import safe_read_point_cloud
+from utils import safe_read_point_cloud
 
 
 searchSize = 81  # Default = 81
