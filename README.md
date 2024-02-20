@@ -104,97 +104,101 @@ conda activate pointpca2-python
     The output will be saved in a new folder named "ttests".
 
 ## Results
-Results for a number of datasets are stored in the [results](results) folder. Each folder contains the final checkpoints, cleaned feature tables, plots, regressions, and t-tests. Below are the results for the APSIPA dataset.
+Results for a number of datasets are stored in the [results](results) folder. Each folder contains the final checkpoints, cleaned feature tables, plots, regressions, and t-tests. Below are the results for the APSIPA dataset, which can also be found [here](results/APSIPA).
 
 - #### Leave One Group Out
 ![APSIPA_LeaveOneGroupOut](results/APSIPA/plots/APSIPA_LeaveOneGroupOut.png)
-|Model                        |p-value (Pearson)  |p_value <= 0.05 (Pearson)|p-value (Spearman) |p_value <= 0.05 (Spearman)|
-|-----------------------------|-------------------|-------------------------|-------------------|--------------------------|
-|AdaBoostRegressor            |0.5940428018205545 |False                    |0.5808245915349846 |False                     |
-|BaggingRegressor             |0.8652964659523231 |False                    |0.4816183488170528 |False                     |
-|BayesianRidge                |0.8976407359452343 |False                    |0.9035159044010612 |False                     |
-|DecisionTreeRegressor        |0.3662507721820587 |False                    |0.35245932841903327|False                     |
-|ElasticNet                   |0.9957604703933023 |False                    |0.9899195928284114 |False                     |
-|ElasticNetCV                 |0.8682635047675572 |False                    |0.9353712816730515 |False                     |
-|ExtraTreeRegressor           |0.5863824828571975 |False                    |0.5965054844015201 |False                     |
-|ExtraTreesRegressor          |0.9227503133542578 |False                    |0.9136274699718901 |False                     |
-|GammaRegressor               |0.9959208784510398 |False                    |0.982605282923443  |False                     |
-|GaussianProcessRegressor     |0.9972276634322356 |False                    |0.994677902526238  |False                     |
-|GradientBoostingRegressor    |0.7791899833199756 |False                    |0.9993078999018824 |False                     |
-|HistGradientBoostingRegressor|0.737029928490573  |False                    |0.7851947529735057 |False                     |
-|HuberRegressor               |0.9202823448745467 |False                    |0.9976137035820045 |False                     |
-|KNeighborsRegressor          |0.9973990658622369 |False                    |0.9874291054379765 |False                     |
-|KernelRidge                  |0.8909245683847816 |False                    |0.976001593996167  |False                     |
-|LGBMRegressor                |0.8823886047089274 |False                    |0.8843344075085421 |False                     |
-|Lars                         |0.37578542783329993|False                    |0.32862193089585967|False                     |
-|LarsCV                       |0.32135562234686876|False                    |0.3049973714025437 |False                     |
-|Lasso                        |0.9996220782341332 |False                    |0.991305371424893  |False                     |
-|LassoCV                      |0.9466313255220544 |False                    |0.949737917898182  |False                     |
-|LassoLars                    |0.9996228156590281 |False                    |0.991305371424893  |False                     |
-|LassoLarsCV                  |0.958655764360453  |False                    |0.9215198468541572 |False                     |
-|LassoLarsIC                  |0.8595657014799178 |False                    |0.9184430050724466 |False                     |
-|LinearRegression             |0.8946373842597292 |False                    |0.9551638705204899 |False                     |
-|LinearSVR                    |0.8031173974022923 |False                    |0.9712985290740261 |False                     |
-|MLPRegressor                 |0.993596524152209  |False                    |0.9220760696146375 |False                     |
-|NuSVR                        |0.9898518386889595 |False                    |0.9819546176346696 |False                     |
-|OrthogonalMatchingPursuit    |0.9923674999778437 |False                    |0.9829171245333703 |False                     |
-|OrthogonalMatchingPursuitCV  |0.9991381468705023 |False                    |0.9749597060549478 |False                     |
-|PassiveAggressiveRegressor   |0.9995410553178112 |False                    |0.9340553215756804 |False                     |
-|PoissonRegressor             |0.9944431327265908 |False                    |0.9884562246809714 |False                     |
-|RANSACRegressor              |0.3319648605597898 |False                    |0.5206709094982876 |False                     |
-|RandomForestRegressor        |0.9847617300158265 |False                    |0.9007089123985869 |False                     |
-|Ridge                        |0.8909245683859892 |False                    |0.976001593996167  |False                     |
-|RidgeCV                      |0.960151417871339  |False                    |0.9414494941250067 |False                     |
-|SGDRegressor                 |0.9983105123224045 |False                    |1.0                |False                     |
-|SVR                          |0.9955856740922825 |False                    |0.9911473580005008 |False                     |
-|TransformedTargetRegressor   |0.8946373842597292 |False                    |0.9551638705204899 |False                     |
-|TweedieRegressor             |0.995630648997472  |False                    |0.9974167788781709 |False                     |
-|XGBRegressor                 |0.9995757472734221 |False                    |0.8866083519208414 |False                     |
+|Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
+|-----------------------------|-----------------|-------------------------|------------------|--------------------------|
+|AdaBoostRegressor            |0.59             |False                    |0.58              |False                     |
+|BaggingRegressor             |0.87             |False                    |0.48              |False                     |
+|BayesianRidge                |0.90             |False                    |0.90              |False                     |
+|DecisionTreeRegressor        |0.37             |False                    |0.35              |False                     |
+|ElasticNet                   |1.00             |False                    |0.99              |False                     |
+|ElasticNetCV                 |0.87             |False                    |0.94              |False                     |
+|ExtraTreeRegressor           |0.59             |False                    |0.60              |False                     |
+|ExtraTreesRegressor          |0.92             |False                    |0.91              |False                     |
+|GammaRegressor               |1.00             |False                    |0.98              |False                     |
+|GaussianProcessRegressor     |1.00             |False                    |0.99              |False                     |
+|GradientBoostingRegressor    |0.78             |False                    |1.00              |False                     |
+|HistGradientBoostingRegressor|0.74             |False                    |0.79              |False                     |
+|HuberRegressor               |0.92             |False                    |1.00              |False                     |
+|KNeighborsRegressor          |1.00             |False                    |0.99              |False                     |
+|KernelRidge                  |0.89             |False                    |0.98              |False                     |
+|LGBMRegressor                |0.88             |False                    |0.88              |False                     |
+|Lars                         |0.38             |False                    |0.33              |False                     |
+|LarsCV                       |0.32             |False                    |0.30              |False                     |
+|Lasso                        |1.00             |False                    |0.99              |False                     |
+|LassoCV                      |0.95             |False                    |0.95              |False                     |
+|LassoLars                    |1.00             |False                    |0.99              |False                     |
+|LassoLarsCV                  |0.96             |False                    |0.92              |False                     |
+|LassoLarsIC                  |0.86             |False                    |0.92              |False                     |
+|LinearRegression             |0.89             |False                    |0.96              |False                     |
+|LinearSVR                    |0.80             |False                    |0.97              |False                     |
+|MLPRegressor                 |0.99             |False                    |0.92              |False                     |
+|NuSVR                        |0.99             |False                    |0.98              |False                     |
+|OrthogonalMatchingPursuit    |0.99             |False                    |0.98              |False                     |
+|OrthogonalMatchingPursuitCV  |1.00             |False                    |0.97              |False                     |
+|PassiveAggressiveRegressor   |1.00             |False                    |0.93              |False                     |
+|PoissonRegressor             |0.99             |False                    |0.99              |False                     |
+|RANSACRegressor              |0.33             |False                    |0.52              |False                     |
+|RandomForestRegressor        |0.98             |False                    |0.90              |False                     |
+|Ridge                        |0.89             |False                    |0.98              |False                     |
+|RidgeCV                      |0.96             |False                    |0.94              |False                     |
+|SGDRegressor                 |1.00             |False                    |1.00              |False                     |
+|SVR                          |1.00             |False                    |0.99              |False                     |
+|TransformedTargetRegressor   |0.89             |False                    |0.96              |False                     |
+|TweedieRegressor             |1.00             |False                    |1.00              |False                     |
+|XGBRegressor                 |1.00             |False                    |0.89              |False                     |
+
+*p-values rounded to 2 decimal places for better visibility*
 
 - #### Group K-Fold
 ![APSIPA_GroupKFold](results/APSIPA/plots/APSIPA_GroupKFold.png)
-|Model                        |p-value (Pearson)  |p_value <= 0.05 (Pearson)|p-value (Spearman) |p_value <= 0.05 (Spearman)|
-|-----------------------------|-------------------|-------------------------|-------------------|--------------------------|
-|AdaBoostRegressor            |0.594042801820559  |False                    |0.5808245915349846 |False                     |
-|BaggingRegressor             |0.8652964659523231 |False                    |0.4816183488170528 |False                     |
-|BayesianRidge                |0.8976407359452372 |False                    |0.9035159044010612 |False                     |
-|DecisionTreeRegressor        |0.3662507721820587 |False                    |0.35245932841903327|False                     |
-|ElasticNet                   |0.9957604703933023 |False                    |0.9899195928284084 |False                     |
-|ElasticNetCV                 |0.8682635047675572 |False                    |0.9353712816730548 |False                     |
-|ExtraTreeRegressor           |0.5863824828571975 |False                    |0.5965054844015216 |False                     |
-|ExtraTreesRegressor          |0.9227503133542578 |False                    |0.9136274699718901 |False                     |
-|GammaRegressor               |0.9959208784510443 |False                    |0.982605282923443  |False                     |
-|GaussianProcessRegressor     |0.9972276634322351 |False                    |0.994677902526238  |False                     |
-|GradientBoostingRegressor    |0.7791899833199756 |False                    |0.999307899901877  |False                     |
-|HistGradientBoostingRegressor|0.737029928490573  |False                    |0.7851947529735057 |False                     |
-|HuberRegressor               |0.9202823448745512 |False                    |0.9976137035820068 |False                     |
-|KNeighborsRegressor          |0.9973990658622334 |False                    |0.9874291054379765 |False                     |
-|KernelRidge                  |0.8909245683847816 |False                    |0.9760015939961703 |False                     |
-|LGBMRegressor                |0.8823886047089274 |False                    |0.8843344075085421 |False                     |
-|Lars                         |0.3757854278332997 |False                    |0.32862193089585967|False                     |
-|LarsCV                       |0.32135562234686876|False                    |0.3049973714025437 |False                     |
-|Lasso                        |0.9996220782341346 |False                    |0.9913053714248918 |False                     |
-|LassoCV                      |0.9466313255220493 |False                    |0.949737917898182  |False                     |
-|LassoLars                    |0.9996228156590281 |False                    |0.9913053714248918 |False                     |
-|LassoLarsCV                  |0.9586557643604479 |False                    |0.9215198468541609 |False                     |
-|LassoLarsIC                  |0.8595657014799177 |False                    |0.9184430050724479 |False                     |
-|LinearRegression             |0.8946373842597292 |False                    |0.9551638705204911 |False                     |
-|LinearSVR                    |0.803117397402289  |False                    |0.9712985290740261 |False                     |
-|MLPRegressor                 |0.993596524152209  |False                    |0.9220760696146375 |False                     |
-|NuSVR                        |0.9898518386889595 |False                    |0.9819546176346696 |False                     |
-|OrthogonalMatchingPursuit    |0.9923674999778437 |False                    |0.9829171245333703 |False                     |
-|OrthogonalMatchingPursuitCV  |0.9991381468705023 |False                    |0.9749597060549511 |False                     |
-|PassiveAggressiveRegressor   |0.9995410553178112 |False                    |0.9340553215756822 |False                     |
-|PoissonRegressor             |0.9944431327265908 |False                    |0.9884562246809714 |False                     |
-|RANSACRegressor              |0.3319648605597898 |False                    |0.5206709094982876 |False                     |
-|RandomForestRegressor        |0.9847617300158322 |False                    |0.9007089123985869 |False                     |
-|Ridge                        |0.8909245683859892 |False                    |0.9760015939961703 |False                     |
-|RidgeCV                      |0.9601514178713362 |False                    |0.9414494941250067 |False                     |
-|SGDRegressor                 |0.9983105123224001 |False                    |1.0                |False                     |
-|SVR                          |0.9955856740922825 |False                    |0.9911473580005008 |False                     |
-|TransformedTargetRegressor   |0.8946373842597292 |False                    |0.9551638705204911 |False                     |
-|TweedieRegressor             |0.995630648997468  |False                    |0.9974167788781709 |False                     |
-|XGBRegressor                 |0.9995757472734221 |False                    |0.8866083519208414 |False                     |
+|Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
+|-----------------------------|-----------------|-------------------------|------------------|--------------------------|
+|AdaBoostRegressor            |0.59             |False                    |0.58              |False                     |
+|BaggingRegressor             |0.87             |False                    |0.48              |False                     |
+|BayesianRidge                |0.90             |False                    |0.90              |False                     |
+|DecisionTreeRegressor        |0.37             |False                    |0.35              |False                     |
+|ElasticNet                   |1.00             |False                    |0.99              |False                     |
+|ElasticNetCV                 |0.87             |False                    |0.94              |False                     |
+|ExtraTreeRegressor           |0.59             |False                    |0.60              |False                     |
+|ExtraTreesRegressor          |0.92             |False                    |0.91              |False                     |
+|GammaRegressor               |1.00             |False                    |0.98              |False                     |
+|GaussianProcessRegressor     |1.00             |False                    |0.99              |False                     |
+|GradientBoostingRegressor    |0.78             |False                    |1.00              |False                     |
+|HistGradientBoostingRegressor|0.74             |False                    |0.79              |False                     |
+|HuberRegressor               |0.92             |False                    |1.00              |False                     |
+|KNeighborsRegressor          |1.00             |False                    |0.99              |False                     |
+|KernelRidge                  |0.89             |False                    |0.98              |False                     |
+|LGBMRegressor                |0.88             |False                    |0.88              |False                     |
+|Lars                         |0.38             |False                    |0.33              |False                     |
+|LarsCV                       |0.32             |False                    |0.30              |False                     |
+|Lasso                        |1.00             |False                    |0.99              |False                     |
+|LassoCV                      |0.95             |False                    |0.95              |False                     |
+|LassoLars                    |1.00             |False                    |0.99              |False                     |
+|LassoLarsCV                  |0.96             |False                    |0.92              |False                     |
+|LassoLarsIC                  |0.86             |False                    |0.92              |False                     |
+|LinearRegression             |0.89             |False                    |0.96              |False                     |
+|LinearSVR                    |0.80             |False                    |0.97              |False                     |
+|MLPRegressor                 |0.99             |False                    |0.92              |False                     |
+|NuSVR                        |0.99             |False                    |0.98              |False                     |
+|OrthogonalMatchingPursuit    |0.99             |False                    |0.98              |False                     |
+|OrthogonalMatchingPursuitCV  |1.00             |False                    |0.97              |False                     |
+|PassiveAggressiveRegressor   |1.00             |False                    |0.93              |False                     |
+|PoissonRegressor             |0.99             |False                    |0.99              |False                     |
+|RANSACRegressor              |0.33             |False                    |0.52              |False                     |
+|RandomForestRegressor        |0.98             |False                    |0.90              |False                     |
+|Ridge                        |0.89             |False                    |0.98              |False                     |
+|RidgeCV                      |0.96             |False                    |0.94              |False                     |
+|SGDRegressor                 |1.00             |False                    |1.00              |False                     |
+|SVR                          |1.00             |False                    |0.99              |False                     |
+|TransformedTargetRegressor   |0.89             |False                    |0.96              |False                     |
+|TweedieRegressor             |1.00             |False                    |1.00              |False                     |
+|XGBRegressor                 |1.00             |False                    |0.89              |False                     |
+
+*p-values rounded to 2 decimal places for better visibility*
 
 ## Acknowledgments
 - [pointpca2](https://github.com/cwi-dis/pointpca2/)
