@@ -7,11 +7,12 @@ from os.path import exists
 from utils import safe_read_point_cloud
 
 
-searchSize = 81  # Default = 81
-numPreds = 40
+SEARCH_SIZE = 81
+PREDICTORS_NUMBER = 40
+EPS = np.finfo(float).eps
 
 
-def denormalize_rgb(rgb):
+def denormalize_rgb(rgb: np.ndarray) -> np.ndarray:
     return (rgb * 255).astype(np.uint8)
 
 
@@ -38,38 +39,36 @@ def load_pc(path):
     return pc
 
 
-def pc_duplicate_merging(pcIn):
-    geomIn = np.asarray(pcIn.points)
-    colorsIn = np.asarray(pcIn.colors) if pcIn.has_colors() else None
-    vertices, ind_v = np.unique(geomIn, axis=0, return_index=True)
-    if geomIn.shape[0] != vertices.shape[0]:
-        # print('** Warning: Duplicated points found.')
-        if colorsIn.shape[0] != 0:
-            # print('** Color blending is applied.')
-            vertices_sorted, colors_sorted = sort_pc(geomIn, colorsIn)
-            diff = np.diff(vertices_sorted, axis=0)
-            unique_indices = np.where(np.any(diff != 0, axis=1))[0] + 1
-            id = np.concatenate(([0], unique_indices, [len(vertices_sorted)]))
-            colors = np.zeros((len(id) - 1, 3))
-            for j in range(len(id)-1):
-                colors[j, :] = np.round(np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
-            id = id[:-1]
-            vertices = vertices_sorted[id, :]
-            colorsIn = colors
-    pcOut = o3d.geometry.PointCloud()
-    pcOut.points = o3d.utility.Vector3dVector(vertices)
-    if colorsIn.shape[0] != 0:
-        pcOut.colors = o3d.utility.Vector3dVector(colorsIn)
-    return pcOut
+def pc_duplicate_merging(pc_input):
+    pc_geometry = np.asarray(pc_input.points)
+    pc_colors = np.asarray(pc_input.colors) if pc_input.has_colors() else None
+    unique_points = np.unique(pc_geometry, axis=0)
+    if pc_geometry.shape[0] != unique_points.shape[0] and pc_colors.shape[0] != 0:
+        points_sorted, colors_sorted = sort_pc(pc_geometry, pc_colors)
+        diff = np.diff(points_sorted, axis=0)
+        unique_indices = np.where(np.any(diff != 0, axis=1))[0] + 1
+        id = np.concatenate(([0], unique_indices, [len(points_sorted)]))
+        colors = np.zeros((len(id) - 1, 3))
+        for j in range(len(id)-1):
+            colors[j, :] = \
+                np.round(np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
+        id = id[:-1]
+        unique_points = points_sorted[id, :]
+        pc_colors = colors
+    pc_output = o3d.geometry.PointCloud()
+    pc_output.points = o3d.utility.Vector3dVector(unique_points)
+    if pc_colors.shape[0] != 0:
+        pc_output.colors = o3d.utility.Vector3dVector(pc_colors)
+    return pc_output
 
 
 def rgb_to_yuv(rgb):
     r = rgb[:, 0]
     g = rgb[:, 1]
     b = rgb[:, 2]
-    c = np.array([[0.2126,  0.7152,  0.0722],
+    c = np.array([[ 0.2126,  0.7152,  0.0722],
                   [-0.1146, -0.3854,  0.5000],
-                  [0.5000, -0.4542, -0.0468]])
+                  [ 0.5000, -0.4542, -0.0468]])
     o = np.array([0, 128, 128])
     y = c[0, 0]*r + c[0, 1]*g + c[0, 2]*b + o[0]
     u = c[1, 0]*r + c[1, 1]*g + c[1, 2]*b + o[1]
@@ -99,195 +98,179 @@ def svd_sign_correction(u, v, u_based_decision=True):
     return u, v
 
 
-def pcacov(cov_mat):
-    U, S, Vt = svd(cov_mat, full_matrices=False, check_finite=False)
+def pcacov(covariance_matrix):
+    U, S, Vt = svd(covariance_matrix, full_matrices=False, check_finite=False)
     U_corrected, Vt_corrected = \
         svd_sign_correction(U, Vt, u_based_decision=False)
     return U_corrected
 
 
-def compute_features(attA, attB, idA, idB, searchSize):
-    local_feats = np.full((attA.shape[0], 42), np.nan)
-    for i in range(attA.shape[0]):
-        dataA = attA[idA[i, :searchSize], :]
-        dataB = attB[idB[i, :searchSize], :]
-        geoA = dataA[:, :3]
-        texA = dataA[:, 3:6]
-        geoB = dataB[:, :3]
-        texB = dataB[:, 3:6]
-        covMatrixA = np.cov(geoA, rowvar=False, ddof=1, dtype=np.double)
-        if not np.all(np.isfinite(covMatrixA)):
-            eigvecsA = np.full((3, 3), np.nan)
-        else:
-            eigvecsA = pcacov(covMatrixA)
-            if eigvecsA.shape[1] != 3:
-                eigvecsA = np.full((3, 3), np.nan)
-        geoA_prA = (geoA - np.nanmean(geoA, axis=0)) @ eigvecsA
-        geoB_prA = (geoB - np.nanmean(geoA, axis=0)) @ eigvecsA
-        meanA = np.nanmean(np.concatenate((geoA_prA, texA), axis=1), axis=0)
-        meanB = np.nanmean(np.concatenate((geoB_prA, texB), axis=1), axis=0)
-        devmeanA = np.concatenate((geoA_prA, texA), axis=1) - meanA
-        devmeanB = np.concatenate((geoB_prA, texB), axis=1) - meanB
-        varA = np.nanmean(devmeanA**2, axis=0)
-        varB = np.nanmean(devmeanB**2, axis=0)
-        covAB = np.nanmean(devmeanA * devmeanB, axis=0)
-        covMatrixB = np.cov(geoB_prA, rowvar=False, ddof=1, dtype=np.double)
-        if not np.all(np.isfinite(covMatrixB)):
-            eigvecsB = np.full((3, 3), np.nan)
-        else:
-            eigvecsB = pcacov(covMatrixB)
-            if eigvecsB.shape[1] != 3:
-                eigvecsB = np.full((3, 3), np.nan)
-        local_feats[i, :] = np.concatenate((geoA_prA[0],          # 1-3
-                                            geoB_prA[0],          # 4-6
-                                            meanA[3:6],           # 7-9
-                                            meanB,                # 10-15
-                                            varA,                 # 16-21
-                                            varB,                 # 22-27
-                                            covAB,                # 28-34
-                                            eigvecsB[:, 0],       # 35-37
-                                            eigvecsB[:, 1],       # 37-39
-                                            eigvecsB[:, 2]))      # 40-42
-    return local_feats
+def compute_eigenvectors(matrix):
+    covariance_matrix = np.cov(matrix, rowvar=False, ddof=1, dtype=np.double)
+    if not np.all(np.isfinite(covariance_matrix)):
+        eigenvectors = np.full((3, 3), np.nan)
+    else:
+        eigenvectors = pcacov(covariance_matrix)
+        if eigenvectors.shape[1] != 3:
+            eigenvectors = np.full((3, 3), np.nan)
+    return eigenvectors
 
 
-def rel_diff(X, Y):
-    return 1 - np.abs(X - Y) / (np.abs(X) + np.abs(Y) + np.finfo(float).eps)
+def compute_features(attributes_A, attributes_B, knn_indices_A, knn_indices_B, SEARCH_SIZE):
+    local_features = np.full((attributes_A.shape[0], 42), np.nan)
+    for i in range(attributes_A.shape[0]):
+        search_data_A = attributes_A[knn_indices_A[i, :SEARCH_SIZE], :]
+        search_data_B = attributes_B[knn_indices_B[i, :SEARCH_SIZE], :]
+        geometry_A = search_data_A[:, :3]
+        texture_A  = search_data_A[:, 3:6]
+        geometry_B = search_data_B[:, :3]
+        texture_B  = search_data_B[:, 3:6]
+        eigenvectors_A = compute_eigenvectors(geometry_A)
+        projection_AA = \
+            (geometry_A - np.nanmean(geometry_A, axis=0)) @ eigenvectors_A
+        projection_BA = \
+            (geometry_B - np.nanmean(geometry_A, axis=0)) @ eigenvectors_A
+        mean_A = np.nanmean(np.concatenate(
+            (projection_AA, texture_A), axis=1), axis=0)
+        mean_B = np.nanmean(np.concatenate(
+            (projection_BA, texture_B), axis=1), axis=0)
+        mean_deviation_A = np.concatenate(
+            (projection_AA, texture_A), axis=1) - mean_A
+        mean_deviation_B = np.concatenate(
+            (projection_BA, texture_B), axis=1) - mean_B
+        variance_A = np.nanmean(mean_deviation_A**2, axis=0)
+        variance_B = np.nanmean(mean_deviation_B**2, axis=0)
+        covariance_AB = np.nanmean(mean_deviation_A * mean_deviation_B, axis=0)
+        eigenvectors_B = compute_eigenvectors(projection_BA)
+        local_features[i, :] = np.concatenate((projection_AA[0],           # 1-3
+                                               projection_BA[0],           # 4-6
+                                               mean_A[3:6],                # 7-9
+                                               mean_B,                     # 10-15
+                                               variance_A,                 # 16-21
+                                               variance_B,                 # 22-27
+                                               covariance_AB,              # 28-34
+                                               eigenvectors_B[:, 0],       # 35-37
+                                               eigenvectors_B[:, 1],       # 37-39
+                                               eigenvectors_B[:, 2]))      # 40-42
+    return local_features
 
 
-def compute_predictors(lfeats):
-    predNames = ['t_mu_y', 't_mu_u', 't_mu_v',
-                 't_var_y', 't_var_u', 't_var_v',
-                 't_cov_y', 't_cov_u', 't_cov_v',
-                 't_varsum',
-                 't_omnivariance',
-                 't_entropy',
-                 'g_pB2pA',
-                 'g_vAB2plA_x', 'g_vAB2plA_y', 'g_vAB2plA_z',
-                 'g_pA2plA_y', 'g_pA2plA_z',
-                 'g_pB2cA',
-                 'g_pB2plA_y', 'g_pB2plA_z',
-                 'g_cB2cA',
-                 'g_cB2plA_y', 'g_cB2plA_z',
-                 'g_var_x', 'g_var_y', 'g_var_z',
-                 'g_cov_x', 'g_cov_y', 'g_cov_z',
-                 'g_omnivariance',
-                 'g_entropy',
-                 'g_anisotropy',
-                 'g_planarity',
-                 'g_linearity',
-                 'g_surfaceVariation',
-                 'g_sphericity',
-                 'g_asim_y',
-                 'g_paralellity_x', 'g_paralellity_z']
-    pA = lfeats[:, 0:3]
-    pB = lfeats[:, 3:6]
-    tmeanA = lfeats[:, 6:9]
-    gmeanB = lfeats[:, 9:12]
-    tmeanB = lfeats[:, 12:15]
-    gvarA = lfeats[:, 15:18]
-    gvarB = lfeats[:, 21:24]
-    tvarA = lfeats[:, 18:21]
-    tvarB = lfeats[:, 24:27]
-    gcovAB = lfeats[:, 27:30]
-    tcovAB = lfeats[:, 30:33]
-    geigvecB_x = lfeats[:, 33:36]
-    geigvecB_y = lfeats[:, 36:39]
-    geigvecB_z = lfeats[:, 39:42]
-    # Initialization
-    preds = np.full((lfeats.shape[0], 40), np.nan)
+def relative_difference(X, Y):
+    return 1 - np.abs(X - Y) / (np.abs(X) + np.abs(Y) + EPS)
+
+
+def compute_predictors(local_features):
+    projection_AA             = local_features[:, 0:3]
+    projection_BA             = local_features[:, 3:6]
+    texture_mean_A            = local_features[:, 6:9]
+    geometry_mean_B           = local_features[:, 9:12]
+    texture_mean_B            = local_features[:, 12:15]
+    geometry_variance_A       = local_features[:, 15:18]
+    geometry_variance_B       = local_features[:, 21:24]
+    texture_variance_A        = local_features[:, 18:21]
+    texture_variance_B        = local_features[:, 24:27]
+    geometry_covariance_AB    = local_features[:, 27:30]
+    texture_covariance_AB     = local_features[:, 30:33]
+    geometry_eigenvectors_B_x = local_features[:, 33:36]
+    geometry_eigenvectors_B_y = local_features[:, 36:39]
+    geometry_eigenvectors_B_z = local_features[:, 39:42]
+    predictors = np.full((local_features.shape[0], 40), np.nan)
     # Textural predictors
-    preds[:, 0:3] = rel_diff(tmeanA, tmeanB)
-    preds[:, 3:6] = rel_diff(tvarA, tvarB)
-    preds[:, 6:9] = np.abs(np.sqrt(tvarA) * np.sqrt(tvarB) - tcovAB) / \
-        (np.sqrt(tvarA) * np.sqrt(tvarB) + np.finfo(float).eps)
-    preds[:, 9] = rel_diff(np.sum(tvarA, axis=1), np.sum(tvarB, axis=1))
-    preds[:, 10] = rel_diff(np.prod(tvarA, axis=1) **
-                            (1 / 3), np.prod(tvarB, axis=1) ** (1 / 3))
-    preds[:, 11] = rel_diff(-np.sum(tvarA * np.log(tvarA + np.finfo(float).eps), axis=1),
-                            -np.sum(tvarB * np.log(tvarB + np.finfo(float).eps), axis=1))
+    predictors[:, 0:3] = relative_difference(
+        texture_mean_A, texture_mean_B)
+    predictors[:, 3:6] = relative_difference(
+        texture_variance_A, texture_variance_B)
+    predictors[:, 6:9] = \
+         np.abs(np.sqrt(texture_variance_A) * np.sqrt(texture_variance_B) - texture_covariance_AB) / \
+        (np.sqrt(texture_variance_A) * np.sqrt(texture_variance_B) + EPS)
+    predictors[:, 9] = relative_difference(
+        np.sum(texture_variance_A, axis=1), np.sum(texture_variance_B, axis=1))
+    predictors[:, 10] = relative_difference(
+        np.prod(texture_variance_A, axis=1) ** (1 / 3), 
+        np.prod(texture_variance_B, axis=1) ** (1 / 3))
+    predictors[:, 11] = relative_difference(
+        -np.sum(texture_variance_A * np.log(texture_variance_A + EPS), axis=1), 
+        -np.sum(texture_variance_B * np.log(texture_variance_B + EPS), axis=1))
     # Geometric predictors
-    preds[:, 12] = np.sqrt(np.sum((pB - pA) ** 2, axis=1))
-    preds[:, 13] = np.abs(
-        np.sum((pB - pA) * np.tile([1, 0, 0], (pA.shape[0], 1)), axis=1))
-    preds[:, 14] = np.abs(
-        np.sum((pB - pA) * np.tile([0, 1, 0], (pA.shape[0], 1)), axis=1))
-    preds[:, 15] = np.abs(
-        np.sum((pB - pA) * np.tile([0, 0, 1], (pA.shape[0], 1)), axis=1))
-    preds[:, 16:18] = np.abs(pA[:, 1:3])
-    preds[:, 18] = np.sqrt(np.sum(pB**2, axis=1))
-    preds[:, 19:21] = np.abs(pB[:, 1:3])
-    preds[:, 21] = np.sqrt(np.sum(gmeanB ** 2, axis=1))
-    preds[:, 22:24] = np.abs(gmeanB[:, 1:3])
-    preds[:, 24:27] = rel_diff(gvarA, gvarB)
-    preds[:, 27:30] = np.abs(np.sqrt(gvarA) * np.sqrt(gvarB) - gcovAB) / (
-        np.sqrt(gvarA) * np.sqrt(gvarB) + np.finfo(float).eps)
-    preds[:, 30] = rel_diff(np.prod(gvarA, axis=1) **
-                            (1 / 3), np.prod(gvarB, axis=1) ** (1 / 3))
-    preds[:, 31] = rel_diff(-np.sum(gvarA * np.log(gvarA + np.finfo(float).eps), axis=1),
-                            -np.sum(gvarB * np.log(gvarB + np.finfo(float).eps), axis=1))
-    preds[:, 32] = rel_diff((gvarA[:, 0] - gvarA[:, 2]) /
-                            gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 2]) / gvarB[:, 0])
-    preds[:, 33] = rel_diff((gvarA[:, 1] - gvarA[:, 2]) /
-                            gvarA[:, 0], (gvarB[:, 1] - gvarB[:, 2]) / gvarB[:, 0])
-    preds[:, 34] = rel_diff((gvarA[:, 0] - gvarA[:, 1]) /
-                            gvarA[:, 0], (gvarB[:, 0] - gvarB[:, 1]) / gvarB[:, 0])
-    preds[:, 35] = rel_diff(
-        gvarA[:, 2] / np.sum(gvarA, axis=1), gvarB[:, 2] / np.sum(gvarB, axis=1))
-    preds[:, 36] = rel_diff(gvarA[:, 2] / gvarA[:, 0],
-                            gvarB[:, 2] / gvarB[:, 0])
-    preds[:, 37] = 1 - 2 * np.arccos(np.abs(np.sum(np.array([0, 1, 0]) * geigvecB_y, axis=1) / (
-        np.sqrt(np.sum(np.array([0, 1, 0]) ** 2)) * np.sqrt(np.sum(geigvecB_y ** 2, axis=1))))) / np.pi
-    preds[:, 38] = 1 - np.sum(np.tile([1, 0, 0],
-                              (geigvecB_x.shape[0], 1)) * geigvecB_x, axis=1)
-    preds[:, 39] = 1 - np.sum(np.tile([0, 0, 1],
-                              (geigvecB_z.shape[0], 1)) * geigvecB_z, axis=1)
-    return preds, predNames
+    predictors[:, 12] = np.sqrt(
+        np.sum((projection_BA - projection_AA) ** 2, axis=1))
+    predictors[:, 13] = np.abs(np.sum(
+        (projection_BA - projection_AA) * np.tile([1, 0, 0], 
+        (projection_AA.shape[0], 1)), axis=1))
+    predictors[:, 14] = np.abs(np.sum(
+        (projection_BA - projection_AA) * np.tile([0, 1, 0], 
+        (projection_AA.shape[0], 1)), axis=1))
+    predictors[:, 15] = np.abs(np.sum(
+        (projection_BA - projection_AA) * np.tile([0, 0, 1],
+        (projection_AA.shape[0], 1)), axis=1))
+    predictors[:, 16:18] = np.abs(projection_AA[:, 1:3])
+    predictors[:, 18] = np.sqrt(np.sum(projection_BA**2, axis=1))
+    predictors[:, 19:21] = np.abs(projection_BA[:, 1:3])
+    predictors[:, 21] = np.sqrt(np.sum(geometry_mean_B ** 2, axis=1))
+    predictors[:, 22:24] = np.abs(geometry_mean_B[:, 1:3])
+    predictors[:, 24:27] = relative_difference(geometry_variance_A, geometry_variance_B)
+    predictors[:, 27:30] = np.abs(
+         np.sqrt(geometry_variance_A) * np.sqrt(geometry_variance_B) - geometry_covariance_AB) / \
+        (np.sqrt(geometry_variance_A) * np.sqrt(geometry_variance_B) + EPS)
+    predictors[:, 30] = relative_difference(
+        np.prod(geometry_variance_A, axis=1) ** (1 / 3), 
+        np.prod(geometry_variance_B, axis=1) ** (1 / 3))
+    predictors[:, 31] = relative_difference(
+        -np.sum(geometry_variance_A * np.log(geometry_variance_A + EPS), axis=1),
+        -np.sum(geometry_variance_B * np.log(geometry_variance_B + EPS), axis=1))
+    predictors[:, 32] = relative_difference(
+        (geometry_variance_A[:, 0] - geometry_variance_A[:, 2]) / geometry_variance_A[:, 0], 
+        (geometry_variance_B[:, 0] - geometry_variance_B[:, 2]) / geometry_variance_B[:, 0])
+    predictors[:, 33] = relative_difference(
+        (geometry_variance_A[:, 1] - geometry_variance_A[:, 2]) / geometry_variance_A[:, 0], 
+        (geometry_variance_B[:, 1] - geometry_variance_B[:, 2]) / geometry_variance_B[:, 0])
+    predictors[:, 34] = relative_difference(
+        (geometry_variance_A[:, 0] - geometry_variance_A[:, 1]) / geometry_variance_A[:, 0], 
+        (geometry_variance_B[:, 0] - geometry_variance_B[:, 1]) / geometry_variance_B[:, 0])
+    predictors[:, 35] = relative_difference(
+        geometry_variance_A[:, 2] / np.sum(geometry_variance_A, axis=1), 
+        geometry_variance_B[:, 2] / np.sum(geometry_variance_B, axis=1))
+    predictors[:, 36] = relative_difference(
+        geometry_variance_A[:, 2] / geometry_variance_A[:, 0],
+        geometry_variance_B[:, 2] / geometry_variance_B[:, 0])
+    predictors[:, 37] = 1 - 2 * np.arccos(
+         np.abs(np.sum(np.array([0, 1, 0]) * geometry_eigenvectors_B_y, axis=1) / 
+        (np.sqrt(np.sum(np.array([0, 1, 0]) ** 2)) * np.sqrt(np.sum(geometry_eigenvectors_B_y ** 2, axis=1))))) / \
+         np.pi
+    predictors[:, 38] = 1 - np.sum(
+        np.tile([1, 0, 0], (geometry_eigenvectors_B_x.shape[0], 1)) * geometry_eigenvectors_B_x, axis=1)
+    predictors[:, 39] = 1 - np.sum(
+        np.tile([0, 0, 1], (geometry_eigenvectors_B_z.shape[0], 1)) * geometry_eigenvectors_B_z, axis=1)
+    return predictors
 
 
 def pool_across_samples(samples):
     samples = samples[np.isfinite(samples)]
-    if samples.shape[0] == 0:
-        return np.nan
     pooled_samples = np.nanmean(samples.real)
     return pooled_samples
 
 
-def lc_pointpca(filenameRef, filenameDis):
-    # Load PCs
-    pc1 = load_pc(filenameRef)
-    pc2 = load_pc(filenameDis)
-    # pc_duplicate_merging
-    # print('pc_duplicate_merging')
-    pc1 = pc_duplicate_merging(pc1)
-    pc2 = pc_duplicate_merging(pc2)
-    # rgb_to_yuv
-    # print('rgb_to_yuv')
-    geoA = np.asarray(pc1.points, dtype=np.double)
-    texA = rgb_to_yuv(np.asarray(pc1.colors))
-    geoB = np.asarray(pc2.points, dtype=np.double)
-    texB = rgb_to_yuv(np.asarray(pc2.colors))
-    # knnsearch
-    # print('knnsearch')
-    _, idA = knnsearch(geoA, geoA, searchSize)
-    _, idB = knnsearch(geoB, geoA, searchSize)
-    # compute_features
-    # print('compute_features')
-    attA = np.concatenate([geoA, texA], axis=1)
-    attB = np.concatenate([geoB, texB], axis=1)
-    lfeats = compute_features(attA, attB, idA, idB, searchSize)
-    # compute_predictors
-    # print('lfeats')
-    preds, predNames = compute_predictors(lfeats)
-    # pool_across_samples
-    # print('lcpointpca')
-    lcpointpca = np.zeros(numPreds)
-    for i in range(numPreds):
-        lcpointpca[i] = pool_across_samples(preds[:, i])
-    # for val in lcpointpca:
-    #     print(f'{val:.4f},')
+def lc_pointpca(path_to_reference, path_to_test):
+    pc_A = load_pc(path_to_reference)
+    pc_B = load_pc(path_to_test)
+    pc_A = pc_duplicate_merging(pc_A)
+    pc_B = pc_duplicate_merging(pc_B)
+    geometry_A = np.asarray(pc_A.points, dtype=np.double)
+    texture_A = rgb_to_yuv(np.asarray(pc_A.colors))
+    geometry_B = np.asarray(pc_B.points, dtype=np.double)
+    texture_B = rgb_to_yuv(np.asarray(pc_B.colors))
+    _, knn_indices_A = knnsearch(geometry_A, geometry_A, SEARCH_SIZE)
+    _, knn_indices_B = knnsearch(geometry_B, geometry_A, SEARCH_SIZE)
+    attributes_A = np.concatenate([geometry_A, texture_A], axis=1)
+    attributes_B = np.concatenate([geometry_B, texture_B], axis=1)
+    local_features = compute_features(
+        attributes_A, attributes_B, knn_indices_A, knn_indices_B, SEARCH_SIZE)
+    predictors = compute_predictors(local_features)
+    lcpointpca = np.zeros(PREDICTORS_NUMBER)
+    for i in range(PREDICTORS_NUMBER):
+        lcpointpca[i] = pool_across_samples(predictors[:, i])
     return lcpointpca
 
 
 if __name__ == '__main__':
-    lc_pointpca("pc8.ply", "pc8-noise.ply")
+    lc_pointpca("path_to_ref.ply", "path_to_test.ply")
