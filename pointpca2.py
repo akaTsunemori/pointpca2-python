@@ -3,7 +3,6 @@ import open3d as o3d
 from scipy.spatial import KDTree
 from scipy.linalg import svd
 from os.path import exists
-
 from utils import safe_read_point_cloud
 
 
@@ -12,11 +11,11 @@ PREDICTORS_NUMBER = 40
 EPS = np.finfo(float).eps
 
 
-def denormalize_rgb(rgb: np.ndarray) -> np.ndarray:
+def denormalize_rgb(rgb):
     return (rgb * 255).astype(np.uint8)
 
 
-def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
+def sort_pc(points, colors):
     pc = np.concatenate((points, colors), axis=1)
     py_list = pc.tolist()
     py_list.sort()
@@ -27,12 +26,14 @@ def sort_pc(points: np.ndarray, colors: np.ndarray) -> np.ndarray:
 def load_pc(path):
     if not exists(path):
         raise Exception('Path does not exist!')
-    pc = safe_read_point_cloud(path)
     # pc = o3d.io.read_point_cloud(path)
+    pc = safe_read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
+    if not pc.has_colors():
+        colors = np.full(points.shape, 0)
     colors = denormalize_rgb(colors)
-    points, colors = sort_pc(points, colors)
+    # points, colors = sort_pc(points, colors)
     pc = o3d.geometry.PointCloud()
     pc.points = o3d.utility.Vector3dVector(points)
     pc.colors = o3d.utility.Vector3dVector(colors)
@@ -41,7 +42,7 @@ def load_pc(path):
 
 def pc_duplicate_merging(pc_input):
     pc_geometry = np.asarray(pc_input.points)
-    pc_colors = np.asarray(pc_input.colors) if pc_input.has_colors() else None
+    pc_colors = np.asarray(pc_input.colors)
     unique_points = np.unique(pc_geometry, axis=0)
     if pc_geometry.shape[0] != unique_points.shape[0] and pc_colors.shape[0] != 0:
         points_sorted, colors_sorted = sort_pc(pc_geometry, pc_colors)
@@ -80,9 +81,9 @@ def rgb_to_yuv(rgb):
     return yuv
 
 
-def knnsearch(va: np.ndarray, vb: np.ndarray, search_size: int) -> np.ndarray:
+def knnsearch(va, vb):
     kdtree = KDTree(va)
-    distances, indices = kdtree.query(vb, k=search_size, p=2)
+    distances, indices = kdtree.query(vb, k=SEARCH_SIZE, p=2)
     return distances, indices
 
 
@@ -116,7 +117,7 @@ def compute_eigenvectors(matrix):
     return eigenvectors
 
 
-def compute_features(attributes_A, attributes_B, knn_indices_A, knn_indices_B, SEARCH_SIZE):
+def compute_features(attributes_A, attributes_B, knn_indices_A, knn_indices_B):
     local_features = np.full((attributes_A.shape[0], 42), np.nan)
     for i in range(attributes_A.shape[0]):
         search_data_A = attributes_A[knn_indices_A[i, :SEARCH_SIZE], :]
@@ -186,19 +187,19 @@ def compute_predictors(local_features):
     predictors[:, 9] = relative_difference(
         np.sum(texture_variance_A, axis=1), np.sum(texture_variance_B, axis=1))
     predictors[:, 10] = relative_difference(
-        np.prod(texture_variance_A, axis=1) ** (1 / 3), 
+        np.prod(texture_variance_A, axis=1) ** (1 / 3),
         np.prod(texture_variance_B, axis=1) ** (1 / 3))
     predictors[:, 11] = relative_difference(
-        -np.sum(texture_variance_A * np.log(texture_variance_A + EPS), axis=1), 
+        -np.sum(texture_variance_A * np.log(texture_variance_A + EPS), axis=1),
         -np.sum(texture_variance_B * np.log(texture_variance_B + EPS), axis=1))
     # Geometric predictors
     predictors[:, 12] = np.sqrt(
         np.sum((projection_BA - projection_AA) ** 2, axis=1))
     predictors[:, 13] = np.abs(np.sum(
-        (projection_BA - projection_AA) * np.tile([1, 0, 0], 
+        (projection_BA - projection_AA) * np.tile([1, 0, 0],
         (projection_AA.shape[0], 1)), axis=1))
     predictors[:, 14] = np.abs(np.sum(
-        (projection_BA - projection_AA) * np.tile([0, 1, 0], 
+        (projection_BA - projection_AA) * np.tile([0, 1, 0],
         (projection_AA.shape[0], 1)), axis=1))
     predictors[:, 15] = np.abs(np.sum(
         (projection_BA - projection_AA) * np.tile([0, 0, 1],
@@ -213,28 +214,28 @@ def compute_predictors(local_features):
          np.sqrt(geometry_variance_A) * np.sqrt(geometry_variance_B) - geometry_covariance_AB) / \
         (np.sqrt(geometry_variance_A) * np.sqrt(geometry_variance_B) + EPS)
     predictors[:, 30] = relative_difference(
-        np.prod(geometry_variance_A, axis=1) ** (1 / 3), 
+        np.prod(geometry_variance_A, axis=1) ** (1 / 3),
         np.prod(geometry_variance_B, axis=1) ** (1 / 3))
     predictors[:, 31] = relative_difference(
         -np.sum(geometry_variance_A * np.log(geometry_variance_A + EPS), axis=1),
         -np.sum(geometry_variance_B * np.log(geometry_variance_B + EPS), axis=1))
     predictors[:, 32] = relative_difference(
-        (geometry_variance_A[:, 0] - geometry_variance_A[:, 2]) / geometry_variance_A[:, 0], 
+        (geometry_variance_A[:, 0] - geometry_variance_A[:, 2]) / geometry_variance_A[:, 0],
         (geometry_variance_B[:, 0] - geometry_variance_B[:, 2]) / geometry_variance_B[:, 0])
     predictors[:, 33] = relative_difference(
-        (geometry_variance_A[:, 1] - geometry_variance_A[:, 2]) / geometry_variance_A[:, 0], 
+        (geometry_variance_A[:, 1] - geometry_variance_A[:, 2]) / geometry_variance_A[:, 0],
         (geometry_variance_B[:, 1] - geometry_variance_B[:, 2]) / geometry_variance_B[:, 0])
     predictors[:, 34] = relative_difference(
-        (geometry_variance_A[:, 0] - geometry_variance_A[:, 1]) / geometry_variance_A[:, 0], 
+        (geometry_variance_A[:, 0] - geometry_variance_A[:, 1]) / geometry_variance_A[:, 0],
         (geometry_variance_B[:, 0] - geometry_variance_B[:, 1]) / geometry_variance_B[:, 0])
     predictors[:, 35] = relative_difference(
-        geometry_variance_A[:, 2] / np.sum(geometry_variance_A, axis=1), 
+        geometry_variance_A[:, 2] / np.sum(geometry_variance_A, axis=1),
         geometry_variance_B[:, 2] / np.sum(geometry_variance_B, axis=1))
     predictors[:, 36] = relative_difference(
         geometry_variance_A[:, 2] / geometry_variance_A[:, 0],
         geometry_variance_B[:, 2] / geometry_variance_B[:, 0])
     predictors[:, 37] = 1 - 2 * np.arccos(
-         np.abs(np.sum(np.array([0, 1, 0]) * geometry_eigenvectors_B_y, axis=1) / 
+         np.abs(np.sum(np.array([0, 1, 0]) * geometry_eigenvectors_B_y, axis=1) /
         (np.sqrt(np.sum(np.array([0, 1, 0]) ** 2)) * np.sqrt(np.sum(geometry_eigenvectors_B_y ** 2, axis=1))))) / \
          np.pi
     predictors[:, 38] = 1 - np.sum(
@@ -259,18 +260,22 @@ def lc_pointpca(path_to_reference, path_to_test):
     texture_A = rgb_to_yuv(np.asarray(pc_A.colors))
     geometry_B = np.asarray(pc_B.points, dtype=np.double)
     texture_B = rgb_to_yuv(np.asarray(pc_B.colors))
-    _, knn_indices_A = knnsearch(geometry_A, geometry_A, SEARCH_SIZE)
-    _, knn_indices_B = knnsearch(geometry_B, geometry_A, SEARCH_SIZE)
+    _, knn_indices_A = knnsearch(geometry_A, geometry_A)
+    _, knn_indices_B = knnsearch(geometry_B, geometry_A)
     attributes_A = np.concatenate([geometry_A, texture_A], axis=1)
     attributes_B = np.concatenate([geometry_B, texture_B], axis=1)
     local_features = compute_features(
-        attributes_A, attributes_B, knn_indices_A, knn_indices_B, SEARCH_SIZE)
+        attributes_A, attributes_B, knn_indices_A, knn_indices_B)
     predictors = compute_predictors(local_features)
     lcpointpca = np.zeros(PREDICTORS_NUMBER)
     for i in range(PREDICTORS_NUMBER):
         lcpointpca[i] = pool_across_samples(predictors[:, i])
+    for i in lcpointpca:
+        print(i)
     return lcpointpca
 
 
 if __name__ == '__main__':
-    lc_pointpca("path_to_ref.ply", "path_to_test.ply")
+    lc_pointpca(
+        'path_to_ref.ply',
+        'path_to_test.ply')
