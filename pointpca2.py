@@ -26,14 +26,12 @@ def sort_pc(points, colors):
 def load_pc(path):
     if not exists(path):
         raise Exception('Path does not exist!')
-    # pc = o3d.io.read_point_cloud(path)
     pc = safe_read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
     if not pc.has_colors():
         colors = np.full(points.shape, 0)
     colors = denormalize_rgb(colors)
-    # points, colors = sort_pc(points, colors)
     pc = o3d.geometry.PointCloud()
     pc.points = o3d.utility.Vector3dVector(points)
     pc.colors = o3d.utility.Vector3dVector(colors)
