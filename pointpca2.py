@@ -268,8 +268,6 @@ def lc_pointpca(path_to_reference, path_to_test):
     lcpointpca = np.zeros(PREDICTORS_NUMBER)
     for i in range(PREDICTORS_NUMBER):
         lcpointpca[i] = pool_across_samples(predictors[:, i])
-    for i in lcpointpca:
-        print(i)
     return lcpointpca
 
 
