@@ -29,6 +29,7 @@ def load_pc(path):
     pc = safe_read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
+    points, colors = sort_pc(points, colors)
     if not pc.has_colors():
         colors = np.full(points.shape, 0)
     colors = denormalize_rgb(colors)
