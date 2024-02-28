@@ -1,5 +1,4 @@
 import numpy as np
-import open3d as o3d
 from scipy.spatial import KDTree
 from scipy.linalg import svd
 from os.path import exists
@@ -8,11 +7,11 @@ from utils import safe_read_point_cloud
 
 SEARCH_SIZE = 81
 PREDICTORS_NUMBER = 40
-EPS = np.finfo(float).eps
+EPS = np.finfo(np.double).eps
 
 
 def denormalize_rgb(rgb):
-    return (rgb * 255).astype(np.uint8)
+    return np.rint(rgb * 255).astype(np.uint)
 
 
 def sort_pc(points, colors):
@@ -23,43 +22,38 @@ def sort_pc(points, colors):
     return pc[:, :3], pc[:, 3:]
 
 
+def duplicate_merging(points, colors):
+    if colors.shape[0] != 0:
+        points_colors_map = dict()
+        points_merged, colors_merged = list(), list()
+        for i in range(points.shape[0]):
+            point = points[i]
+            point = (point[0], point[1], point[2])
+            if point not in points_colors_map:
+                points_colors_map[point] = []
+            points_colors_map[point].append(colors[i])
+        for key in points_colors_map:
+            points_merged.append(key)
+            colors_mean = np.mean(points_colors_map[key], axis=0)
+            colors_merged.append(colors_mean)
+        colors_merged = np.rint(colors_merged)
+        points = np.asarray(points_merged)
+        colors = np.asarray(colors_merged).astype(np.uint)
+    return points, colors
+
+
 def load_pc(path):
     if not exists(path):
         raise Exception('Path does not exist!')
     pc = safe_read_point_cloud(path)
     points = np.asarray(pc.points, dtype=np.double)
     colors = np.asarray(pc.colors, dtype=np.double)
-    points, colors = sort_pc(points, colors)
     if not pc.has_colors():
-        colors = np.full(points.shape, 0)
+        colors = np.zeros(points.shape)
     colors = denormalize_rgb(colors)
-    pc = o3d.geometry.PointCloud()
-    pc.points = o3d.utility.Vector3dVector(points)
-    pc.colors = o3d.utility.Vector3dVector(colors)
-    return pc
-
-
-def pc_duplicate_merging(pc_input):
-    pc_geometry = np.asarray(pc_input.points)
-    pc_colors = np.asarray(pc_input.colors)
-    unique_points = np.unique(pc_geometry, axis=0)
-    if pc_geometry.shape[0] != unique_points.shape[0] and pc_colors.shape[0] != 0:
-        points_sorted, colors_sorted = sort_pc(pc_geometry, pc_colors)
-        diff = np.diff(points_sorted, axis=0)
-        unique_indices = np.where(np.any(diff != 0, axis=1))[0] + 1
-        id = np.concatenate(([0], unique_indices, [len(points_sorted)]))
-        colors = np.zeros((len(id) - 1, 3))
-        for j in range(len(id)-1):
-            colors[j, :] = \
-                np.round(np.mean(colors_sorted[id[j]:id[j+1], :], axis=0))
-        id = id[:-1]
-        unique_points = points_sorted[id, :]
-        pc_colors = colors
-    pc_output = o3d.geometry.PointCloud()
-    pc_output.points = o3d.utility.Vector3dVector(unique_points)
-    if pc_colors.shape[0] != 0:
-        pc_output.colors = o3d.utility.Vector3dVector(pc_colors)
-    return pc_output
+    points, colors = duplicate_merging(points, colors)
+    points, colors = sort_pc(points, colors)
+    return points, colors
 
 
 def rgb_to_yuv(rgb):
@@ -251,14 +245,10 @@ def pool_across_samples(samples):
 
 
 def lc_pointpca(path_to_reference, path_to_test):
-    pc_A = load_pc(path_to_reference)
-    pc_B = load_pc(path_to_test)
-    pc_A = pc_duplicate_merging(pc_A)
-    pc_B = pc_duplicate_merging(pc_B)
-    geometry_A = np.asarray(pc_A.points, dtype=np.double)
-    texture_A = rgb_to_yuv(np.asarray(pc_A.colors))
-    geometry_B = np.asarray(pc_B.points, dtype=np.double)
-    texture_B = rgb_to_yuv(np.asarray(pc_B.colors))
+    geometry_A, texture_A = load_pc(path_to_reference)
+    geometry_B, texture_B = load_pc(path_to_test)
+    texture_A = rgb_to_yuv(texture_A)
+    texture_B = rgb_to_yuv(texture_B)
     _, knn_indices_A = knnsearch(geometry_A, geometry_A)
     _, knn_indices_B = knnsearch(geometry_B, geometry_A)
     attributes_A = np.concatenate([geometry_A, texture_A], axis=1)
@@ -269,10 +259,12 @@ def lc_pointpca(path_to_reference, path_to_test):
     lcpointpca = np.zeros(PREDICTORS_NUMBER)
     for i in range(PREDICTORS_NUMBER):
         lcpointpca[i] = pool_across_samples(predictors[:, i])
+    for i in lcpointpca:
+        print(i)
     return lcpointpca
 
 
 if __name__ == '__main__':
     lc_pointpca(
-        'path_to_ref.ply',
-        'path_to_test.ply')
+        '/home/arthurc/Documents/APSIPA/PVS/tmc13_amphoriskos_vox10_dec_geom03_text03_octree-predlift.ply',
+        '/home/arthurc/Documents/APSIPA/references/amphoriskos_vox10.ply',)
