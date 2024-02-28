@@ -10,6 +10,17 @@ PREDICTORS_NUMBER = 40
 EPS = np.finfo(np.double).eps
 
 
+def load_point_cloud(path):
+    if not exists(path):
+        raise Exception('Path does not exist.')
+    pc = safe_read_point_cloud(path)
+    points = np.asarray(pc.points, dtype=np.double)
+    colors = np.asarray(pc.colors, dtype=np.double)
+    if not pc.has_colors():
+        colors = np.zeros(points.shape)
+    return points, colors
+
+
 def denormalize_rgb(rgb):
     return np.rint(rgb * 255).astype(np.uint)
 
@@ -39,17 +50,6 @@ def duplicate_merging(points, colors):
         colors_merged = np.rint(colors_merged)
         points = np.asarray(points_merged)
         colors = np.asarray(colors_merged).astype(np.uint)
-    return points, colors
-
-
-def load_point_cloud(path):
-    if not exists(path):
-        raise Exception('Path does not exist.')
-    pc = safe_read_point_cloud(path)
-    points = np.asarray(pc.points, dtype=np.double)
-    colors = np.asarray(pc.colors, dtype=np.double)
-    if not pc.has_colors():
-        colors = np.zeros(points.shape)
     return points, colors
 
 
