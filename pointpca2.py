@@ -252,7 +252,7 @@ def pool_across_samples(samples):
     return pooled_samples
 
 
-def lc_pointpca(path_to_reference, path_to_test, decimation_factor=None):
+def pointpca2(path_to_reference, path_to_test, decimation_factor=None):
     points_A, colors_A = load_point_cloud(path_to_reference)
     points_B, colors_B = load_point_cloud(path_to_test)
     points_A, colors_A = preprocess_point_cloud(points_A, colors_A, decimation_factor)
@@ -271,7 +271,6 @@ def lc_pointpca(path_to_reference, path_to_test, decimation_factor=None):
 
 
 if __name__ == '__main__':
-    lc_pointpca(
-        '/home/arthurc/Documents/APSIPA/PVS/tmc13_amphoriskos_vox10_dec_geom03_text03_octree-predlift.ply',
-        '/home/arthurc/Documents/APSIPA/references/amphoriskos_vox10.ply',
-        20)
+    pointpca2(
+        'path_to_ref.ply',
+        'path_to_test.ply')
