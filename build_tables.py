@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matlab.engine
 from argparse import ArgumentParser
-from pointpca2 import lc_pointpca
+from pointpca2 import pointpca2
 from os.path import exists, join
 from os import mkdir, listdir
 
@@ -104,7 +104,7 @@ def build_tables(dataset_name, dataset_csv, pointpca2_path):
                 print(f'\t\tFound checkpoint at "{output_MATLAB}", skipping...')
             print('\tComputing lc_pointpca Python')
             if not exists_Python:
-                lcpointpca_Python = lc_pointpca(
+                lcpointpca_Python = pointpca2(
                     f'{signal_location}/{signal}',
                     f'{ref_location}/{ref}')
                 print(f'\t\tDone!')
