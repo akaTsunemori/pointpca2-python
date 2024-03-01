@@ -36,20 +36,21 @@ def sort_pc(points, colors):
 def duplicate_merging(points, colors):
     if colors.shape[0] != 0:
         points_colors_map = dict()
-        points_merged, colors_merged = list(), list()
         for i in range(points.shape[0]):
             point = points[i]
             point = (point[0], point[1], point[2])
             if point not in points_colors_map:
                 points_colors_map[point] = []
             points_colors_map[point].append(colors[i])
-        for key in points_colors_map:
-            points_merged.append(key)
+        rows_num = len(points_colors_map)
+        points_merged = np.zeros((rows_num, 3), dtype=np.double)
+        colors_merged = np.zeros((rows_num, 3), dtype=np.double)
+        for i, key in enumerate(points_colors_map):
+            points_merged[i] = key
             colors_mean = np.mean(points_colors_map[key], axis=0)
-            colors_merged.append(colors_mean)
-        colors_merged = np.rint(colors_merged)
-        points = np.asarray(points_merged)
-        colors = np.asarray(colors_merged).astype(np.uint)
+            colors_merged[i] = colors_mean
+        colors_merged = np.rint(colors_merged).astype(np.uint)
+        return points_merged, colors_merged
     return points, colors
 
 
