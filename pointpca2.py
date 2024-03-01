@@ -34,24 +34,23 @@ def sort_pc(points, colors):
 
 
 def duplicate_merging(points, colors):
-    if colors.shape[0] != 0:
-        points_colors_map = dict()
-        for i in range(points.shape[0]):
-            point = points[i]
-            point = (point[0], point[1], point[2])
-            if point not in points_colors_map:
-                points_colors_map[point] = []
-            points_colors_map[point].append(colors[i])
-        rows_num = len(points_colors_map)
-        points_merged = np.zeros((rows_num, 3), dtype=np.double)
-        colors_merged = np.zeros((rows_num, 3), dtype=np.double)
-        for i, key in enumerate(points_colors_map):
-            points_merged[i] = key
-            colors_mean = np.mean(points_colors_map[key], axis=0)
-            colors_merged[i] = colors_mean
-        colors_merged = np.rint(colors_merged).astype(np.uint)
-        return points_merged, colors_merged
-    return points, colors
+    if colors.shape[0] == 0:
+        return points, colors
+    points_colors_map = dict()
+    for i in range(points.shape[0]):
+        point = tuple(points[i])
+        if point not in points_colors_map:
+            points_colors_map[point] = []
+        points_colors_map[point].append(colors[i])
+    rows_num = len(points_colors_map)
+    points_merged = np.empty((rows_num, 3), dtype=np.double)
+    colors_merged = np.empty((rows_num, 3), dtype=np.double)
+    for i, key in enumerate(points_colors_map):
+        points_merged[i] = key
+        colors_mean = np.mean(points_colors_map[key], axis=0)
+        colors_merged[i] = colors_mean
+    colors_merged = np.rint(colors_merged).astype(np.uint)
+    return points_merged, colors_merged
 
 
 def rgb_to_yuv(rgb):
@@ -66,13 +65,20 @@ def rgb_to_yuv(rgb):
     return yuv
 
 
-def preprocess_point_cloud(points, colors):
+def decimate_array(arr, decimation_factor):
+    return arr[::decimation_factor]
+
+
+def preprocess_point_cloud(points, colors, decimation_factor):
     if points.shape != colors.shape:
         raise Exception('Points and colors must have the same shape.')
     colors = denormalize_rgb(colors)
     points, colors = duplicate_merging(points, colors)
     points, colors = sort_pc(points, colors)
     colors = rgb_to_yuv(colors)
+    if decimation_factor is not None:
+        points = decimate_array(points, decimation_factor)
+        colors = decimate_array(colors, decimation_factor)
     return points, colors
 
 
@@ -246,11 +252,11 @@ def pool_across_samples(samples):
     return pooled_samples
 
 
-def lc_pointpca(path_to_reference, path_to_test):
+def lc_pointpca(path_to_reference, path_to_test, decimation_factor=None):
     points_A, colors_A = load_point_cloud(path_to_reference)
     points_B, colors_B = load_point_cloud(path_to_test)
-    points_A, colors_A = preprocess_point_cloud(points_A, colors_A)
-    points_B, colors_B = preprocess_point_cloud(points_B, colors_B)
+    points_A, colors_A = preprocess_point_cloud(points_A, colors_A, decimation_factor)
+    points_B, colors_B = preprocess_point_cloud(points_B, colors_B, decimation_factor)
     _, knn_indices_A = knnsearch(points_A, points_A)
     _, knn_indices_B = knnsearch(points_B, points_A)
     attributes_A = np.concatenate([points_A, colors_A], axis=1)
@@ -269,4 +275,5 @@ def lc_pointpca(path_to_reference, path_to_test):
 if __name__ == '__main__':
     lc_pointpca(
         '/home/arthurc/Documents/APSIPA/PVS/tmc13_amphoriskos_vox10_dec_geom03_text03_octree-predlift.ply',
-        '/home/arthurc/Documents/APSIPA/references/amphoriskos_vox10.ply',)
+        '/home/arthurc/Documents/APSIPA/references/amphoriskos_vox10.ply',
+        20)
