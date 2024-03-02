@@ -5,18 +5,18 @@ from os import mkdir
 from argparse import ArgumentParser
 
 
-def ttests(csv_path_regression_MATLAB,
-           csv_path_regression_Python,
+def ttests(csv_path_regression_reference,
+           csv_path_regression_test,
            dataset_name,
            regression_type):
-    matlab = pd.read_csv(csv_path_regression_MATLAB, index_col=0).dropna()
-    python = pd.read_csv(csv_path_regression_Python, index_col=0).dropna()
+    matlab = pd.read_csv(csv_path_regression_reference, index_col=0).dropna()
+    python = pd.read_csv(csv_path_regression_test, index_col=0).dropna()
     ttests = {
         'Model': [],
-        'Pearson': [],
-        'Pearson p_value <= 0.05': [],
-        'Spearman': [],
-        'Spearman p_value <= 0.05': [],
+        'p-value (Pearson)': [],
+        'p_value ≤ 0.05 (Pearson)': [],
+        'p-value (Spearman)': [],
+        'p_value ≤ 0.05 (Spearman)': [],
     }
     regressors = matlab['Model'].unique()
     alpha = 0.05
@@ -42,23 +42,23 @@ def ttests(csv_path_regression_MATLAB,
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument('csv_path_regression_MATLAB_LeaveOneGroupOut', type=str)
-    parser.add_argument('csv_path_regression_MATLAB_GroupKFold', type=str)
-    parser.add_argument('csv_path_regression_Python_LeaveOneGroupOut', type=str)
-    parser.add_argument('csv_path_regression_Python_GroupKFold', type=str)
+    parser.add_argument('csv_path_regression_reference_LeaveOneGroupOut', type=str)
+    parser.add_argument('csv_path_regression_reference_GroupKFold', type=str)
+    parser.add_argument('csv_path_regression_test_LeaveOneGroupOut', type=str)
+    parser.add_argument('csv_path_regression_test_GroupKFold', type=str)
     parser.add_argument('dataset_name', type=str)
     return parser.parse_args()
 
 
 def main(args):
     ttests(
-        args.csv_path_regression_MATLAB_LeaveOneGroupOut,
-        args.csv_path_regression_Python_LeaveOneGroupOut,
+        args.csv_path_regression_reference_LeaveOneGroupOut,
+        args.csv_path_regression_test_LeaveOneGroupOut,
         args.dataset_name,
         'LeaveOneGroupOut')
     ttests(
-        args.csv_path_regression_MATLAB_GroupKFold,
-        args.csv_path_regression_Python_GroupKFold,
+        args.csv_path_regression_reference_GroupKFold,
+        args.csv_path_regression_test_GroupKFold,
         args.dataset_name,
         'GroupKFold')
 
