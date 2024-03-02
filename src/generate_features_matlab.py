@@ -55,8 +55,8 @@ def generate_features(dataset_name, dataset_csv, pointpca2_path):
             continue
         for i in range(len(features_columns)):
             df_features.at[index, features_columns[i]] = pointpca2_features[i]
-        df_features['Time Taken (s)'] = time_1 - time_0
-        df_features['Peak RAM Usage (MB)'] = peak_memory / (1024 * 1024)
+        df_features.at[index, 'Time Taken (s)'] = time_1 - time_0
+        df_features.at[index, 'Peak RAM Usage (MB)'] = peak_memory / (1024 * 1024)
         print('\tSaving checkpoint to disk')
         if exists(checkpoint_path):
             move(checkpoint_path, checkpoint_path_bak)
