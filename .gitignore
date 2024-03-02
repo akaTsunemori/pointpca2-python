@@ -3,6 +3,7 @@ tables/
 regressions/
 plots/
 ttests/
+features/
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm+all,visualstudiocode,python

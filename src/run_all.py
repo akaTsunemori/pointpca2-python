@@ -26,28 +26,22 @@ def cleanup(dataset_name, csv_path_reference, csv_path_test):
 
 def run_all_scripts(dataset_name, csv_path_reference, csv_path_test):
     cleanup(dataset_name, csv_path_reference, csv_path_test)
-    system(f'''
-        python3 regressions.py
-        features/{dataset_name}_pointpca2_reference_cleaned.csv
-        features/{dataset_name}_pointpca2_test_cleaned.csv
-        {dataset_name}
-        ''')
-    system(f'''
-        python3 plots.py
-        regressions/{dataset_name}_reference_regression_LeaveOneGroupOut.csv
-        regressions/{dataset_name}_reference_regression_GroupKFold.csv
-        regressions/{dataset_name}_test_regression_LeaveOneGroupOut.csv
-        regressions/{dataset_name}_test_regression_GroupKFold.csv
-        {dataset_name}
-        ''')
-    system(f'''
-        python3 ttests.py \
+    system(f'python3 src/regressions.py \
+        features/{dataset_name}_pointpca2_reference_cleaned.csv \
+        features/{dataset_name}_pointpca2_test_cleaned.csv \
+        {dataset_name}')
+    system(f'python3 src/plots.py \
         regressions/{dataset_name}_reference_regression_LeaveOneGroupOut.csv \
         regressions/{dataset_name}_reference_regression_GroupKFold.csv \
         regressions/{dataset_name}_test_regression_LeaveOneGroupOut.csv \
         regressions/{dataset_name}_test_regression_GroupKFold.csv \
-        {dataset_name}
-        ''')
+        {dataset_name}')
+    system(f'python3 src/ttests.py \
+        regressions/{dataset_name}_reference_regression_LeaveOneGroupOut.csv \
+        regressions/{dataset_name}_reference_regression_GroupKFold.csv \
+        regressions/{dataset_name}_test_regression_LeaveOneGroupOut.csv \
+        regressions/{dataset_name}_test_regression_GroupKFold.csv \
+        {dataset_name}')
 
 
 def get_args():

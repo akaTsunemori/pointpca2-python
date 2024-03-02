@@ -27,13 +27,13 @@ def ttests(csv_path_regression_reference,
         t_stat, p_value = stats.ttest_ind(
             matlab_regressor['Pearson'].to_numpy(),
             python_regressor['Pearson'].to_numpy())
-        ttests['Pearson'].append(p_value)
-        ttests['Pearson p_value <= 0.05'].append(p_value <= alpha)
+        ttests['p-value (Pearson)'].append(p_value)
+        ttests['p_value ≤ 0.05 (Pearson)'].append(p_value <= alpha)
         t_stat, p_value = stats.ttest_ind(
             matlab_regressor['Spearman'].to_numpy(),
             python_regressor['Spearman'].to_numpy())
-        ttests['Spearman'].append(p_value)
-        ttests['Spearman p_value <= 0.05'].append(p_value <= alpha)
+        ttests['p-value (Spearman)'].append(p_value)
+        ttests['p_value ≤ 0.05 (Spearman)'].append(p_value <= alpha)
     ttests_df = pd.DataFrame(ttests)
     if not exists('./ttests'):
         mkdir('./ttests')
