@@ -9,8 +9,8 @@ def ttests(csv_path_regression_reference,
            csv_path_regression_test,
            dataset_name,
            regression_type):
-    matlab = pd.read_csv(csv_path_regression_reference, index_col=0).dropna()
-    python = pd.read_csv(csv_path_regression_test, index_col=0).dropna()
+    reference = pd.read_csv(csv_path_regression_reference, index_col=0).dropna()
+    test = pd.read_csv(csv_path_regression_test, index_col=0).dropna()
     ttests = {
         'Model': [],
         'p-value (Pearson)': [],
@@ -18,20 +18,20 @@ def ttests(csv_path_regression_reference,
         'p-value (Spearman)': [],
         'p_value ≤ 0.05 (Spearman)': [],
     }
-    regressors = matlab['Model'].unique()
+    regressors = reference['Model'].unique()
     alpha = 0.05
     for regressor in regressors:
         ttests['Model'].append(regressor)
-        python_regressor = python[python['Model'] == regressor]
-        matlab_regressor = matlab[matlab['Model'] == regressor]
+        test_regressor = test[test['Model'] == regressor]
+        reference_regressor = reference[reference['Model'] == regressor]
         t_stat, p_value = stats.ttest_ind(
-            matlab_regressor['Pearson'].to_numpy(),
-            python_regressor['Pearson'].to_numpy())
+            reference_regressor['Pearson'].to_numpy(),
+            test_regressor['Pearson'].to_numpy())
         ttests['p-value (Pearson)'].append(p_value)
         ttests['p_value ≤ 0.05 (Pearson)'].append(p_value <= alpha)
         t_stat, p_value = stats.ttest_ind(
-            matlab_regressor['Spearman'].to_numpy(),
-            python_regressor['Spearman'].to_numpy())
+            reference_regressor['Spearman'].to_numpy(),
+            test_regressor['Spearman'].to_numpy())
         ttests['p-value (Spearman)'].append(p_value)
         ttests['p_value ≤ 0.05 (Spearman)'].append(p_value <= alpha)
     ttests_df = pd.DataFrame(ttests)
