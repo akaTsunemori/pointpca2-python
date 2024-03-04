@@ -26,11 +26,12 @@ def denormalize_rgb(rgb):
 
 
 def sort_pc(points, colors):
-    pc = np.concatenate((points, colors), axis=1)
-    py_list = pc.tolist()
-    py_list.sort()
-    pc = np.asarray(py_list, dtype=np.double)
-    return pc[:, :3], pc[:, 3:]
+    pc_concat = np.concatenate((points, colors), axis=1)
+    indices = np.lexsort(
+        [pc_concat[:, col] for col in range(pc_concat.shape[1]-1, -1, -1)],
+        axis=0)
+    sorted_pc = pc_concat[indices]
+    return sorted_pc[:, :3], sorted_pc[:, 3:]
 
 
 def duplicate_merging(points, colors):
