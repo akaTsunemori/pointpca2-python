@@ -43,7 +43,7 @@ def duplicate_merging(points, colors):
     np.add.at(colors_sum, inverse_idx, colors)
     counts = np.bincount(inverse_idx, minlength=colors_sum.shape[0])
     mean_colors = (colors_sum.T / counts).T
-    mean_colors = np.rint(mean_colors).astype(np.uint8)
+    mean_colors = np.rint(mean_colors).astype(np.uint)
     return unique_points, mean_colors
 
 
