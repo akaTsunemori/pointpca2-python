@@ -112,11 +112,11 @@ def compute_eigenvectors(matrix):
     return eigenvectors
 
 
-def compute_features(attributes_A, attributes_B, knn_indices_A, knn_indices_B):
-    local_features = np.full((attributes_A.shape[0], 42), np.nan)
-    for i in range(attributes_A.shape[0]):
-        search_data_A = attributes_A[knn_indices_A[i, :SEARCH_SIZE], :]
-        search_data_B = attributes_B[knn_indices_B[i, :SEARCH_SIZE], :]
+def compute_features(point_cloud_A, point_cloud_B, knn_indices_A, knn_indices_B):
+    local_features = np.full((point_cloud_A.shape[0], 42), np.nan)
+    for i in range(point_cloud_A.shape[0]):
+        search_data_A = point_cloud_A[knn_indices_A[i, :SEARCH_SIZE], :]
+        search_data_B = point_cloud_B[knn_indices_B[i, :SEARCH_SIZE], :]
         points_A = search_data_A[:, :3]
         colors_A = search_data_A[:, 3:6]
         points_B = search_data_B[:, :3]
@@ -253,10 +253,10 @@ def pointpca2(path_to_reference, path_to_test, decimation_factor=None):
     points_B, colors_B = preprocess_point_cloud(points_B, colors_B, decimation_factor)
     _, knn_indices_A = knnsearch(points_A, points_A)
     _, knn_indices_B = knnsearch(points_B, points_A)
-    attributes_A = np.concatenate([points_A, colors_A], axis=1)
-    attributes_B = np.concatenate([points_B, colors_B], axis=1)
+    point_cloud_A = np.concatenate([points_A, colors_A], axis=1)
+    point_cloud_B = np.concatenate([points_B, colors_B], axis=1)
     local_features = compute_features(
-        attributes_A, attributes_B, knn_indices_A, knn_indices_B)
+        point_cloud_A, point_cloud_B, knn_indices_A, knn_indices_B)
     predictors = compute_predictors(local_features)
     lcpointpca = np.zeros(PREDICTORS_NUMBER)
     for i in range(PREDICTORS_NUMBER):
