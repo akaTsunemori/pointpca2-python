@@ -6,26 +6,26 @@
 This project aims to adapt the [pointpca2](https://github.com/cwi-dis/pointpca2/) project (2023 Grand Challenge on Objective Quality Metrics for Volumetric Contents), originally written in MATLAB, to Python. The goal is to replicate its functionality in a different programming ecosystem, ensuring that features generated in both environments are comparable and interchangeable for further analysis. Upon successful replication, the project will proceed to utilize these features for regression analysis against a dataset's subjective scores. A comprehensive comparison of the performance of regressors, facilitated through Pearson and Spearman correlation coefficients, will be carried out for each version of the code. Furthermore, a statistical t-test will be conducted to rigorously compare the correlation results derived from both MATLAB and Python implementations, ensuring the validity and reliability of the adaptation process.
 
 
-## Key Objectives
+# Key Objectives
 1. Code Adaptation: Convert the "pointpca2" project code from MATLAB to Python, ensuring that the core functionality and output remain consistent across both languages.
 2. Feature Generation: Generate PCA features using both the original MATLAB code and the newly developed Python code. We will validate the equivalence of these features through statistical methods to ensure that both implementations produce comparable results.
 3. Regression Analysis: Use the generated features to perform regression analysis against subjective scores in the dataset. This will involve using a set of regression models and fitting them with the features to predict the subjective scores. Calculate both Pearson and Spearman correlation coefficients for each regressor.
 4. Correlation Analysis: Plot the correlation coefficients for each regressor. This analysis will provide insights into the linear and rank-order relationships between predicted scores and actual subjective scores.
 5. Statistical Comparison: Conduct a t-test to statistically compare the correlation coefficients obtained from MATLAB and Python implementations. This step is critical to assess whether the differences in correlations (if any) are statistically significant, providing a quantitative measure of the adaptation's fidelity.
 
-## Expected Outcomes
+# Expected Outcomes
 - A fully functional Python version of the "pointpca2" MATLAB project, verified for accuracy and equivalence.
 - A detailed comparison of regression model performances using PCA features from both MATLAB and Python implementations.
 - A statistical analysis report providing evidence on the equivalence (or differences) in correlation coefficients derived from both languages' codes.
 
-## Prerequisites
-### General
+# Prerequisites
+## General
 - anaconda3 ([https://www.anaconda.com/](https://www.anaconda.com/))
-### For MATLAB feature generation
+## For MATLAB feature generation
 - MATLAB (version R2023a tested)
 - MATLAB Engine API for Python ([https://pypi.org/project/matlabengine/](https://pypi.org/project/matlabengine/))
 
-## Installing
+# Installation
 ```bash
 # Clone the repository and navigate into it
 git clone https://github.com/akaTsunemori/pointpca2-python.git
@@ -38,13 +38,13 @@ conda env update --file environment.yml
 conda activate pointpca2-python
 ```
 
-## Usage
+# Usage
 The files in this section are located in the [src](src) directory.
 
-- ### pointpca2.py
+## pointpca2.py
 This is the project's main module. It replicates all the functions present in pointpca2's original code. The main function, pointpca2, should be called with the path for the reference and the path for the test point clouds, it returns an array consisting of the generated features. Additionally, an optional "decimation_factor" argument can be passed, where a decimation factor of 2 would mean that both the reference and test point clouds will be halved.
 
-- ### generate_features_dataset.py
+## generate_features_dataset.py
 Generates tables containing dataset features. It assumes the dataset CSV format as follows:
   
 |SIGNAL  |REF     |SCORE   |LOCATION|REFLOCATION|ATTACK  |CLASS   |
@@ -61,7 +61,15 @@ CLI arguments:
 
 You can process multiple datasets concurrently by running this script with different parameters.
 
-- ### regressions.py
+## generate_features_matlab.py
+Use this script to generate features using the original MATLAB version of pointpca2. This script functions similarly to generate_features_dataset.py but includes an extra command-line argument to specify the path to the MATLAB version of pointpca2. Please note that decimation is not supported in this script.
+
+CLI arguments:
+- dataset_name: Name of the dataset, e.g., **APSIPA**
+- dataset_csv: Path to the dataset CSV, e.g., **/home/user/Documents/APSIPA/apsipa.csv**
+- pointpca2_path: Path to the original pointpca2 MATLAB code/repository, e.g., **/home/user/Documents/pointpca2/**
+
+## regressions.py
 Performs regressions using models from LazyPredict based on tables generated by **generate_features_dataset.py**, applying Leave One Group Out and Group K-Fold techniques.
 
 CLI arguments:
@@ -71,7 +79,7 @@ CLI arguments:
 
 Outputs are saved in the "regressions" folder.
 
-- ### plots.py
+## plots.py
 Plots Pearson and Spearman correlation coefficients for each regressor using tables from **regressions.py**.
 
 CLI arguments:
@@ -84,7 +92,7 @@ CLI arguments:
 
 Outputs are saved in the "plots" folder.
   
-- ### ttests.py
+## ttests.py
 Conducts a t-test to statistically compare correlation coefficients from MATLAB and Python regressions, assessing the adaptation's fidelity.
 
 CLI arguments:
@@ -97,10 +105,10 @@ CLI arguments:
  
 Outputs are saved in the "ttests" folder.
 
-## Results
+# Results
 Results for various datasets are in the [results](results) folder, including checkpoints, feature tables, plots, regressions, and t-tests. APSIPA dataset results are exemplified below.
 
-- ### Leave One Group Out
+## Leave One Group Out
 ![APSIPA_LeaveOneGroupOut](results/APSIPA/plots/APSIPA_LeaveOneGroupOut.png)
 |Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
 |-----------------------------|-----------------|-------------------------|------------------|--------------------------|
@@ -147,7 +155,7 @@ Results for various datasets are in the [results](results) folder, including che
 
 *p-values rounded to 2 decimal places for better visibility*
 
-- ### Group K-Fold
+## Group K-Fold
 ![APSIPA_GroupKFold](results/APSIPA/plots/APSIPA_GroupKFold.png)
 |Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
 |-----------------------------|-----------------|-------------------------|------------------|--------------------------|
@@ -194,10 +202,10 @@ Results for various datasets are in the [results](results) folder, including che
 
 *p-values rounded to 2 decimal places for visibility*
 
-## Contributing
+# Contributing
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated. You can simply open an issue with the tag "enhancement".
 
-## Acknowledgments
+# Acknowledgments
 - [pointpca2](https://github.com/cwi-dis/pointpca2/)
 - [Anaconda](https://www.anaconda.com/)
 - [LazyPredict](https://lazypredict.readthedocs.io/en/latest/)
@@ -208,7 +216,7 @@ Contributions are what make the open-source community such an amazing place to l
 - [Seaborn](https://seaborn.pydata.org/)
 - [MATLAB Engine API for Python](https://pypi.org/project/matlabengine/)
 
-## License
+# License
 Licensed under the BSD 3-Clause Clear License
 
 ---
