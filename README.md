@@ -106,6 +106,9 @@ Outputs are saved in the "ttests" folder.
 Results for various datasets are in the [results](results) folder, including checkpoints, feature tables, plots, regressions, and t-tests. APSIPA dataset results are exemplified below.
 
 ## Leave One Group Out
+<details>
+  <summary>Spoiler</summary>
+
 ![APSIPA_LeaveOneGroupOut](results/APSIPA/plots/APSIPA_LeaveOneGroupOut.png)
 |Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
 |-----------------------------|-----------------|-------------------------|------------------|--------------------------|
@@ -152,7 +155,12 @@ Results for various datasets are in the [results](results) folder, including che
 
 *p-values rounded to 2 decimal places for better visibility*
 
+</details>
+
 ## Group K-Fold
+<details>
+  <summary>Spoiler</summary>
+
 ![APSIPA_GroupKFold](results/APSIPA/plots/APSIPA_GroupKFold.png)
 |Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
 |-----------------------------|-----------------|-------------------------|------------------|--------------------------|
@@ -198,6 +206,8 @@ Results for various datasets are in the [results](results) folder, including che
 |XGBRegressor                 |1.00             |False                    |0.89              |False                     |
 
 *p-values rounded to 2 decimal places for visibility*
+
+</details>
 
 # Contributing
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated. You can simply open an issue with the tag "enhancement".
