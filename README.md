@@ -1,7 +1,4 @@
-<h1 align="center">
-  pointpca2-python
-</h1>
-
+# pointpca2-python
 #### Cross-language replication and analysis of "pointpca2" from MATLAB to Python.
 This project aims to adapt the [pointpca2](https://github.com/cwi-dis/pointpca2/) project (2023 Grand Challenge on Objective Quality Metrics for Volumetric Contents), originally written in MATLAB, to Python. The goal is to replicate its functionality in a different programming ecosystem, ensuring that features generated in both environments are comparable and interchangeable for further analysis. Upon successful replication, the project will proceed to utilize these features for regression analysis against a dataset's subjective scores. A comprehensive comparison of the performance of regressors, facilitated through Pearson and Spearman correlation coefficients, will be carried out for each version of the code. Furthermore, a statistical t-test will be conducted to rigorously compare the correlation results derived from both MATLAB and Python implementations, ensuring the validity and reliability of the adaptation process.
 
