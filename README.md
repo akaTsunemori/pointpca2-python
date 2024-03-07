@@ -98,7 +98,7 @@ CLI arguments:
 Outputs are saved in the "ttests" folder.
 
 ## Results
-Results for various datasets are in the [results](results) folder, including checkpoints, feature tables, plots, regressions, and t-tests. APSIPA dataset results are available exemplified below.
+Results for various datasets are in the [results](results) folder, including checkpoints, feature tables, plots, regressions, and t-tests. APSIPA dataset results are exemplified below.
 
 - ### Leave One Group Out
 ![APSIPA_LeaveOneGroupOut](results/APSIPA/plots/APSIPA_LeaveOneGroupOut.png)
@@ -194,8 +194,19 @@ Results for various datasets are in the [results](results) folder, including che
 
 *p-values rounded to 2 decimal places for visibility*
 
+## Contributing
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated. You can simply open an issue with the tag "enhancement".
+
 ## Acknowledgments
 - [pointpca2](https://github.com/cwi-dis/pointpca2/)
+- [Anaconda](https://www.anaconda.com/)
+- [LazyPredict](https://lazypredict.readthedocs.io/en/latest/)
+- [NumPy](https://numpy.org/doc/stable/)
+- [Pandas](https://pandas.pydata.org/docs/)
+- [SciPy](https://scipy.org/)
+- [Matplotlib](https://matplotlib.org/)
+- [Seaborn](https://seaborn.pydata.org/)
+- [MATLAB Engine API for Python](https://pypi.org/project/matlabengine/)
 
 ## License
 Licensed under the BSD 3-Clause Clear License
