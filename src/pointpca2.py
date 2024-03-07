@@ -26,31 +26,25 @@ def denormalize_rgb(rgb):
 
 
 def sort_pc(points, colors):
-    pc = np.concatenate((points, colors), axis=1)
-    py_list = pc.tolist()
-    py_list.sort()
-    pc = np.asarray(py_list, dtype=np.double)
-    return pc[:, :3], pc[:, 3:]
+    pc_concat = np.concatenate((points, colors), axis=1)
+    indices = np.lexsort(
+        [pc_concat[:, col] for col in range(pc_concat.shape[1]-1, -1, -1)],
+        axis=0)
+    sorted_pc = pc_concat[indices]
+    return sorted_pc[:, :3], sorted_pc[:, 3:]
 
 
 def duplicate_merging(points, colors):
     if colors.shape[0] == 0:
         return points, colors
-    points_colors_map = dict()
-    for i in range(points.shape[0]):
-        point = tuple(points[i])
-        if point not in points_colors_map:
-            points_colors_map[point] = []
-        points_colors_map[point].append(colors[i])
-    rows_num = len(points_colors_map)
-    points_merged = np.empty((rows_num, 3), dtype=np.double)
-    colors_merged = np.empty((rows_num, 3), dtype=np.double)
-    for i, key in enumerate(points_colors_map):
-        points_merged[i] = key
-        colors_mean = np.mean(points_colors_map[key], axis=0)
-        colors_merged[i] = colors_mean
-    colors_merged = np.rint(colors_merged).astype(np.uint)
-    return points_merged, colors_merged
+    unique_points, inverse_idx = np.unique(
+        points, return_inverse=True, axis=0)
+    colors_sum = np.zeros_like(unique_points)
+    np.add.at(colors_sum, inverse_idx, colors)
+    counts = np.bincount(inverse_idx, minlength=colors_sum.shape[0])
+    mean_colors = (colors_sum.T / counts).T
+    mean_colors = np.rint(mean_colors).astype(np.uint)
+    return unique_points, mean_colors
 
 
 def rgb_to_yuv(rgb):
@@ -118,11 +112,11 @@ def compute_eigenvectors(matrix):
     return eigenvectors
 
 
-def compute_features(attributes_A, attributes_B, knn_indices_A, knn_indices_B):
-    local_features = np.full((attributes_A.shape[0], 42), np.nan)
-    for i in range(attributes_A.shape[0]):
-        search_data_A = attributes_A[knn_indices_A[i, :SEARCH_SIZE], :]
-        search_data_B = attributes_B[knn_indices_B[i, :SEARCH_SIZE], :]
+def compute_features(point_cloud_A, point_cloud_B, knn_indices_A, knn_indices_B):
+    local_features = np.full((point_cloud_A.shape[0], 42), np.nan)
+    for i in range(point_cloud_A.shape[0]):
+        search_data_A = point_cloud_A[knn_indices_A[i, :SEARCH_SIZE], :]
+        search_data_B = point_cloud_B[knn_indices_B[i, :SEARCH_SIZE], :]
         points_A = search_data_A[:, :3]
         colors_A = search_data_A[:, 3:6]
         points_B = search_data_B[:, :3]
@@ -259,10 +253,10 @@ def pointpca2(path_to_reference, path_to_test, decimation_factor=None):
     points_B, colors_B = preprocess_point_cloud(points_B, colors_B, decimation_factor)
     _, knn_indices_A = knnsearch(points_A, points_A)
     _, knn_indices_B = knnsearch(points_B, points_A)
-    attributes_A = np.concatenate([points_A, colors_A], axis=1)
-    attributes_B = np.concatenate([points_B, colors_B], axis=1)
+    point_cloud_A = np.concatenate([points_A, colors_A], axis=1)
+    point_cloud_B = np.concatenate([points_B, colors_B], axis=1)
     local_features = compute_features(
-        attributes_A, attributes_B, knn_indices_A, knn_indices_B)
+        point_cloud_A, point_cloud_B, knn_indices_A, knn_indices_B)
     predictors = compute_predictors(local_features)
     lcpointpca = np.zeros(PREDICTORS_NUMBER)
     for i in range(PREDICTORS_NUMBER):

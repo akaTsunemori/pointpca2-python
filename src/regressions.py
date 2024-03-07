@@ -50,75 +50,75 @@ def one_group_out_regression(df: pd.DataFrame):
     return result_df
 
 
-def group_k_fold_regression(df_MATLAB: pd.DataFrame, df_Python: pd.DataFrame):
-    X_MATLAB = df_MATLAB[FEATURES]
-    y_MATLAB = df_MATLAB['SCORE']
-    X_Python = df_Python[FEATURES]
-    y_Python = df_Python['SCORE']
-    groups = df_MATLAB['REF']
+def group_k_fold_regression(df_reference_: pd.DataFrame, df_test_: pd.DataFrame):
+    X_reference_ = df_reference_[FEATURES]
+    y_reference_ = df_reference_['SCORE']
+    X_test_ = df_test_[FEATURES]
+    y_test_ = df_test_['SCORE']
+    groups = df_reference_['REF']
     gkf = GroupKFold(n_splits=len(groups.unique())) # Adjust n_splits accordingly
-    dataframes_MATLAB = list()
-    dataframes_Python = list()
+    dataframes_reference_ = list()
+    dataframes_test_ = list()
     fold = 0
-    for train_idx, test_idx in gkf.split(X_MATLAB, y_MATLAB, groups):
-        X_train, X_test = X_MATLAB.iloc[train_idx], X_MATLAB.iloc[test_idx]
-        y_train, y_test = y_MATLAB.iloc[train_idx], y_MATLAB.iloc[test_idx]
+    for train_idx, test_idx in gkf.split(X_reference_, y_reference_, groups):
+        X_train, X_test = X_reference_.iloc[train_idx], X_reference_.iloc[test_idx]
+        y_train, y_test = y_reference_.iloc[train_idx], y_reference_.iloc[test_idx]
         testing_groups = ', '.join(i for i in groups.iloc[test_idx].unique())
         models = compute_regression(X_train, X_test, y_train, y_test)
         models['Fold'] = fold
         models['Testing Groups'] = testing_groups
-        dataframes_MATLAB.append(models)
-        X_train, X_test = X_Python.iloc[train_idx], X_Python.iloc[test_idx]
-        y_train, y_test = y_Python.iloc[train_idx], y_Python.iloc[test_idx]
+        dataframes_reference_.append(models)
+        X_train, X_test = X_test_.iloc[train_idx], X_test_.iloc[test_idx]
+        y_train, y_test = y_test_.iloc[train_idx], y_test_.iloc[test_idx]
         models = compute_regression(X_train, X_test, y_train, y_test)
         models['Fold'] = fold
         models['Testing Groups'] = testing_groups
-        dataframes_Python.append(models)
+        dataframes_test_.append(models)
         fold += 1
-    result_df_MATLAB = pd.concat(dataframes_MATLAB)
-    result_df_MATLAB = result_df_MATLAB.reset_index(drop=False)
-    result_df_Python = pd.concat(dataframes_Python)
-    result_df_Python = result_df_Python.reset_index(drop=False)
+    result_df_reference_ = pd.concat(dataframes_reference_)
+    result_df_reference_ = result_df_reference_.reset_index(drop=False)
+    result_df_test_ = pd.concat(dataframes_test_)
+    result_df_test_ = result_df_test_.reset_index(drop=False)
     cols_to_move = ['Testing Groups', 'Fold']
     for col in cols_to_move:
-        column_to_move = result_df_MATLAB.pop(col)
-        result_df_MATLAB.insert(0, col, column_to_move)
-        column_to_move = result_df_Python.pop(col)
-        result_df_Python.insert(0, col, column_to_move)
-    return result_df_MATLAB, result_df_Python
+        column_to_move = result_df_reference_.pop(col)
+        result_df_reference_.insert(0, col, column_to_move)
+        column_to_move = result_df_test_.pop(col)
+        result_df_test_.insert(0, col, column_to_move)
+    return result_df_reference_, result_df_test_
 
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument('csv_path_MATLAB', type=str,
-                        help='./results/apsipa_pointpca2_MATLAB_cleaned.csv')
-    parser.add_argument('csv_path_Python', type=str,
-                        help='./results/apsipa_pointpca2_Python_cleaned.csv')
+    parser.add_argument('csv_path_reference_', type=str,
+                        help='./results/apsipa_pointpca2_reference__cleaned.csv')
+    parser.add_argument('csv_path_test_', type=str,
+                        help='./results/apsipa_pointpca2_test__cleaned.csv')
     parser.add_argument('dataset_name', type=str,
                         help='Example: APSIPA')
     return parser.parse_args()
 
 
 def main(args):
-    csv_path_Python = args.csv_path_Python
-    csv_path_MATLAB = args.csv_path_MATLAB
+    csv_path_test_ = args.csv_path_test_
+    csv_path_reference_ = args.csv_path_reference_
     dataset_name = args.dataset_name
-    df_Python = pd.read_csv(csv_path_Python, index_col=0)
-    df_MATLAB = pd.read_csv(csv_path_MATLAB, index_col=0)
+    df_test_ = pd.read_csv(csv_path_test_, index_col=0)
+    df_reference_ = pd.read_csv(csv_path_reference_, index_col=0)
     # When using train_test_split (function args need to be adapted)
-    # MATLAB = compute_regression(df_Python[FEATURES].values, df_Python['SCORE'].values, 'regression_MATLAB.csv')
-    # Python = compute_regression(df_MATLAB[FEATURES].values, df_MATLAB['SCORE'].values, 'regression_Python.csv')
-    # MATLAB.to_csv('regression_MATLAB.csv')
-    # Python.to_csv('regression_Python.csv')
-    MATLAB = one_group_out_regression(df_MATLAB)
-    Python = one_group_out_regression(df_Python)
+    # reference_ = compute_regression(df_test_[FEATURES].values, df_test_['SCORE'].values, 'regression_reference_.csv')
+    # test_ = compute_regression(df_reference_[FEATURES].values, df_reference_['SCORE'].values, 'regression_test_.csv')
+    # reference_.to_csv('regression_reference_.csv')
+    # test_.to_csv('regression_test_.csv')
+    reference_ = one_group_out_regression(df_reference_)
+    test_ = one_group_out_regression(df_test_)
     if not exists('./regressions'):
         mkdir('regressions')
-    MATLAB.to_csv(f'regressions/{dataset_name}_MATLAB_regression_LeaveOneGroupOut.csv')
-    Python.to_csv(f'regressions/{dataset_name}_Python_regression_LeaveOneGroupOut.csv')
-    MATLAB, Python = group_k_fold_regression(df_MATLAB, df_Python)
-    MATLAB.to_csv(f'regressions/{dataset_name}_MATLAB_regression_GroupKFold.csv')
-    Python.to_csv(f'regressions/{dataset_name}_Python_regression_GroupKFold.csv')
+    reference_.to_csv(f'regressions/{dataset_name}_reference_regression_LeaveOneGroupOut.csv')
+    test_.to_csv(f'regressions/{dataset_name}_test_regression_LeaveOneGroupOut.csv')
+    reference_, test_ = group_k_fold_regression(df_reference_, df_test_)
+    reference_.to_csv(f'regressions/{dataset_name}_reference_regression_GroupKFold.csv')
+    test_.to_csv(f'regressions/{dataset_name}_test_regression_GroupKFold.csv')
 
 
 if __name__ == '__main__':
