@@ -9,8 +9,8 @@ from pointpca2 import pointpca2
 
 
 def generate_features(dataset_name, dataset_csv, decimation_factor):
-    if not exists('./tables'):
-        mkdir('tables')
+    if not exists('./features'):
+        mkdir('features')
     df_dataset = pd.read_csv(dataset_csv)
     df_dataset['SIGNAL'] = df_dataset['SIGNAL'].str.strip()
     df_dataset['REF'] = df_dataset['REF'].str.strip()
@@ -19,8 +19,8 @@ def generate_features(dataset_name, dataset_csv, decimation_factor):
     features_columns = [f'FEATURE_{i+1}' for i in range(40)]
     common_columns = ['SIGNAL', 'REF', 'SCORE']
     extra_columns = ['Time Taken (s)', 'Peak RAM Usage (MB)']
-    checkpoint_path = f'./tables/{dataset_name}_pointpca2_checkpoint.csv'
-    checkpoint_path_bak = f'./tables/{dataset_name}_pointpca2_checkpoint.bak'
+    checkpoint_path = f'./features/{dataset_name}_pointpca2_checkpoint.csv'
+    checkpoint_path_bak = f'./features/{dataset_name}_pointpca2_checkpoint.bak'
     if exists(checkpoint_path):
         df_features = pd.read_csv(checkpoint_path, index_col=0)
         print(f'Loaded checkpoint at {checkpoint_path}')
