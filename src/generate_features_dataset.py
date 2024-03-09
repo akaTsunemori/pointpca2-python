@@ -41,8 +41,8 @@ def generate_features(dataset_name, dataset_csv, decimation_factor):
             tracemalloc.clear_traces()
             time_0 = time.time()
             pointpca2_features = pointpca2(
-                f'{signal_location}/{signal}',
                 f'{ref_location}/{ref}',
+                f'{signal_location}/{signal}',
                 decimation_factor)
             time_1 = time.time()
             _, peak_memory = tracemalloc.get_traced_memory()
