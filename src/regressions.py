@@ -56,7 +56,7 @@ def group_k_fold_regression(df_reference_: pd.DataFrame, df_test_: pd.DataFrame)
     X_test_ = df_test_[FEATURES]
     y_test_ = df_test_['SCORE']
     groups = df_reference_['REF']
-    gkf = GroupKFold(n_splits=len(groups.unique())) # Adjust n_splits accordingly
+    gkf = GroupKFold(n_splits=5)
     dataframes_reference_ = list()
     dataframes_test_ = list()
     fold = 0
