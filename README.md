@@ -1,4 +1,4 @@
-# pointpca2-python
+# PointPCA 2 - Python
 #### Cross-language replication and analysis of "pointpca2" from MATLAB to Python.
 This project aims to adapt the [pointpca2](https://github.com/cwi-dis/pointpca2/) project (2023 Grand Challenge on Objective Quality Metrics for Volumetric Contents), originally written in MATLAB, to Python. The goal is to replicate its functionality in a different programming ecosystem, ensuring that features generated in both environments are comparable and interchangeable for further analysis. Upon successful replication, the project will proceed to utilize these features for regression analysis against a dataset's subjective scores. A comprehensive comparison of the performance of regressors, facilitated through Pearson and Spearman correlation coefficients, will be carried out for each version of the code. Furthermore, a statistical t-test will be conducted to rigorously compare the correlation results derived from both MATLAB and Python implementations, ensuring the validity and reliability of the adaptation process.
 
@@ -111,7 +111,7 @@ Results for various datasets are in the [results](results) folder, including che
 <details>
   <summary>Spoiler</summary>
 
-![APSIPA_LeaveOneGroupOut](results/APSIPA/plots/APSIPA_LeaveOneGroupOut.png)
+![APSIPA_LeaveOneGroupOut](results/v1.0-stable/APSIPA/plots/APSIPA_LeaveOneGroupOut.png)
 |Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
 |-----------------------------|-----------------|-------------------------|------------------|--------------------------|
 |AdaBoostRegressor            |0.59             |False                    |0.58              |False                     |
@@ -163,7 +163,7 @@ Results for various datasets are in the [results](results) folder, including che
 <details>
   <summary>Spoiler</summary>
 
-![APSIPA_GroupKFold](results/APSIPA/plots/APSIPA_GroupKFold.png)
+![APSIPA_GroupKFold](results/v1.0-stable/APSIPA/plots/APSIPA_GroupKFold.png)
 |Model                        |p-value (Pearson)|p_value <= 0.05 (Pearson)|p-value (Spearman)|p_value <= 0.05 (Spearman)|
 |-----------------------------|-----------------|-------------------------|------------------|--------------------------|
 |AdaBoostRegressor            |0.59             |False                    |0.58              |False                     |
